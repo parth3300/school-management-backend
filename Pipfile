@@ -4,12 +4,12 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-mysqlclient = "*"
 djoser = "*"
 pillow = "*"
 django = "*"
 cloudinary = "*"
 djangorestframework = "*"
+pymysql = "*"
 
 [dev-packages]
 

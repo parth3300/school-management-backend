@@ -45,11 +45,11 @@ INSTALLED_APPS = [
 
 ]
 
-DATABASE_URL = "mysql://root:ejsQCCHIlnLkHfJHCvVCjtcVuhlgdwzG@centerbeam.proxy.rlwy.net:56305/railway"
+DATABASE_URL = "postgresql://postgres:zbgnzDkTejpZwxxvyxzpQpfHGFWGXUYw@tramway.proxy.rlwy.net:45008/railway"
 
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.mysql',
+        'ENGINE': 'django.db.backends.postgresql',
         'NAME': DATABASE_URL.rsplit('/', 1)[-1],
         'USER': DATABASE_URL.split('//')[1].split(':')[0],
         'PASSWORD': DATABASE_URL.split(':')[2].split('@')[0],
