@@ -9,7 +9,20 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'first_name', 'last_name', 'email', 'password']
-
+        extra_kwargs = {
+            'password': {'write_only': True}
+        }
+        
+    def get_fields(self):
+        fields = super().get_fields()
+        request = self.context.get('request')
+        
+        # Hide password field for non-POST requests
+        if request and request.method != 'POST':
+            fields.pop('password', None)
+        
+        return fields
+    
 class SchoolSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(read_only=True, format="%B %d, %Y, %I:%M %p")
     updated_at = serializers.DateTimeField(read_only=True, format="%B %d, %Y, %I:%M %p")
@@ -57,9 +70,6 @@ class TeacherSerializer(serializers.ModelSerializer):
     class Meta:
         model = Teacher
         fields = '__all__'
-        extra_kwargs = {
-            'password': {'write_only': True}
-        }
 
     def create(self, validated_data):
         user_data = validated_data.pop('user')
@@ -71,7 +81,7 @@ class TeacherSerializer(serializers.ModelSerializer):
 
     def update(self, instance, validated_data):
         user_data = validated_data.pop('user', {})
-        subjects = validated_data.pop('subjects', None)
+        subjects = validated_data.pop('subjects', [])
 
         user = instance.user
         for attr, value in user_data.items():

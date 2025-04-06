@@ -21,6 +21,13 @@ class StandardResultsSetPagination(PageNumberPagination):
 # Base viewset with soft delete
 class SoftDeleteModelViewSet(viewsets.ModelViewSet):
 
+    def destroy(self, request, *args, **kwargs):
+        instance = self.get_object()
+        instance.is_active = False
+        instance.is_deleted = True
+        instance.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+    
     def get_serializer(self, *args, **kwargs):
         serializer_class = self.get_serializer_class()
         kwargs['context'] = self.get_serializer_context()
