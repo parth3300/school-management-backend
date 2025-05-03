@@ -21,7 +21,5 @@ from django.conf import settings
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('school_management/', include('school.urls')),
-    path('auth/', include('djoser.urls')),
-    path('auth/', include('djoser.urls.jwt'))
+    path('school_management/', include('school.urls'))
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -40,7 +41,9 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'school',
     'school_user',
-    'rest_framework'
+    'rest_framework',
+    'djoser',
+    "corsheaders"
 
 
 ]
@@ -62,6 +65,7 @@ DATABASES = {
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -86,7 +90,6 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'school_management.wsgi.application'
 
 
 # Database
@@ -158,3 +161,57 @@ AUTH_USER_MODEL = 'school_user.User'
 
 TIME_ZONE = 'Asia/Kolkata'
 USE_TZ = True
+
+
+CORS_ALLOW_ALL_ORIGINS = True
+
+# # Email Configuratd
+# JWT Configuration
+# REST_FRAMEWORK = {
+#     'DEFAULT_PERMISSION_CLASSES': (
+#         'rest_framework.permissions.IsAuthenticated',
+#     ),
+#     'DEFAULT_AUTHENTICATION_CLASSES': (
+#         'rest_framework_simplejwt.authentication.JWTAuthentication',
+#     ),
+# }
+
+# JWT Settings
+# SIMPLE_JWT = {
+#     'AUTH_HEADER_TYPES': ('JWT',),
+#     "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+#     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
+#     "ROTATE_REFRESH_TOKENS": True,
+#     "UPDATE_LAST_LOGIN": True,
+# }
+
+# # Djoser Settings
+# DJOSER = {
+#     'LOGIN_FIELD': 'email',
+#     'USER_CREATE_PASSWORD_RETYPE':True,
+#     'ACTIVATION_URL':'/activate/{uid}/{token}',
+#     'SEND_ACTIVATION_EMAIL':True,
+#     'SEND_CONFIRMATION_EMAIL':True,
+#     'PASSWORD_CHANGED_EMAIL_CONFIRMATION':True,
+#     'PASSWORD_RESET_CONFIRM_URL': 'password-reset/{uid}/{token}',
+#     'SET_PASSWORD_RETYPE': True,
+#     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
+#     'TOKEN_MODEL': None,       # To Delete User Must Set it to None
+#     'SERIALIZERS':{
+#         'user_create': 'school_user.serializers.UserCreateSerializer',
+#         'user': 'school_user.serializers.UserCreateSerializer',
+#         'user_delete': 'djoser.serializers.UserDeleteSerializer',
+#     },
+#     'EMAIL': {
+#         'activation': 'school_user.email.ActivationEmail',
+#         'confirmation': 'school_user.email.ConfirmationEmail',
+#         'password_reset': 'school_user.email.PasswordResetEmail',
+#         'password_changed_confirmation': 'school_user.email.PasswordChangedConfirmationEmail',
+#     },
+# }
+
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]

@@ -2,6 +2,7 @@ import random
 import string
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 from cloudinary.models import CloudinaryField
 from django.db.models.signals import post_delete
 from django.dispatch import receiver
@@ -47,16 +48,6 @@ class AcademicYear(BaseModel):
     def __str__(self):
         return self.name
 
-class Class(BaseModel):
-    id = models.CharField(primary_key=True, default=generate_custom_uuid, editable=False, max_length=12, unique=True)
-    name = models.CharField(max_length=50)
-    class_teacher = models.ForeignKey('Teacher', on_delete=models.SET_NULL, null=True, blank=True)
-    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
-    capacity = models.PositiveIntegerField(default=30)
-
-    def __str__(self):
-        return f"{self.name} ({self.academic_year})"
-
 class Subject(BaseModel):
     id = models.CharField(primary_key=True, default=generate_custom_uuid, editable=False, max_length=12, unique=True)
     name = models.CharField(max_length=100)
@@ -66,6 +57,16 @@ class Subject(BaseModel):
     def __str__(self):
         return self.name
 
+class Class(BaseModel):
+    id = models.CharField(primary_key=True, default=generate_custom_uuid, editable=False, max_length=12, unique=True)
+    name = models.CharField(max_length=50)
+    teachers = models.ManyToManyField('Teacher', blank=True, related_name='classes')
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE)
+    capacity = models.PositiveIntegerField(default=30)
+
+    def __str__(self):
+        return f"{self.name} ({self.academic_year})"
+
 class Teacher(BaseModel):
     id = models.CharField(primary_key=True, default=generate_custom_uuid, editable=False, max_length=12, unique=True)
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
@@ -74,7 +75,8 @@ class Teacher(BaseModel):
     date_of_birth = models.DateField()
     joining_date = models.DateField()
     qualification = models.CharField(max_length=100)
-    subjects = models.ManyToManyField(Subject)
+    subjects = models.ManyToManyField(Subject, blank=True, related_name='teachers')
+    photo = CloudinaryField('image', null=True, blank=True)
 
     def __str__(self):
         return f"{self.user.first_name} {self.user.last_name}"
@@ -147,8 +149,62 @@ class ExamResult(BaseModel):
 
     def __str__(self):
         return f"{self.student} - {self.exam} - {self.subject}: {self.marks}"
+
+class Announcement(BaseModel):
+    PRIORITY_CHOICES = [
+        ('L', 'Low'),
+        ('M', 'Medium'),
+        ('H', 'High'),
+        ('C', 'Critical'),
+    ]
     
+    AUDIENCE_CHOICES = [
+        ('ALL', 'Everyone'),
+        ('STU', 'Students Only'),
+        ('TEA', 'Teachers Only'),
+        ('CLS', 'Specific Class'),
+        ('SUB', 'Subject Students'),
+    ]
     
+    id = models.CharField(primary_key=True, default=generate_custom_uuid, editable=False, max_length=12, unique=True)
+    title = models.CharField(max_length=200)
+    message = models.TextField()
+    start_date = models.DateTimeField()
+    end_date = models.DateTimeField(null=True, blank=True)
+    priority = models.CharField(max_length=1, choices=PRIORITY_CHOICES, default='M')
+    audience = models.CharField(max_length=3, choices=AUDIENCE_CHOICES, default='ALL')
+    
+    # Relationships
+    school = models.ForeignKey(School, on_delete=models.CASCADE)
+    academic_year = models.ForeignKey(AcademicYear, on_delete=models.CASCADE, null=True, blank=True)
+    classes = models.ManyToManyField(Class, blank=True)
+    subjects = models.ManyToManyField(Subject, blank=True)
+    created_by = models.ForeignKey(Teacher, on_delete=models.SET_NULL, null=True)
+    
+    # Additional fields
+    is_pinned = models.BooleanField(default=False)
+    attachment = CloudinaryField('raw', null=True, blank=True)
+    
+    class Meta:
+        ordering = ['-is_pinned', '-start_date']
+        verbose_name = 'Announcement'
+        verbose_name_plural = 'Announcements'
+    
+    def __str__(self):
+        return f"{self.title} ({self.get_priority_display()})"
+    
+    @property
+    def is_active(self):
+        now = timezone.now()
+        if self.end_date:
+            return self.start_date <= now <= self.end_date
+        return self.start_date <= now
+    
+    def save(self, *args, **kwargs):
+        # Set default academic year if not set
+        if not self.academic_year:
+            self.academic_year = AcademicYear.objects.filter(is_current=True).first()
+        super().save(*args, **kwargs)
 
 @receiver(post_delete, sender=Teacher)
 def delete_user_when_teacher_deleted(sender, instance, **kwargs):
