@@ -19,7 +19,6 @@ from django.contrib.auth.hashers import check_password
 
 User = get_user_model()
 
-import os
 # Custom paginator
 class StandardResultsSetPagination(PageNumberPagination):
     page_size = 10
@@ -58,12 +57,6 @@ class SchoolViewSet(SoftDeleteModelViewSet):
 
     @action(detail=False, methods=['get'])
     def stats(self, request):
-        EMAIL_HOST_USER = os.environ.get('EMAIL_USER')
-        EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASS')
-        EMAIL_USE_TLS = True
-        print("EMAIL_HOST_USER:", os.environ.get("EMAIL_HOST_PASSWORD"))
-        print("SGRWHWBH")
-        school = self.get_queryset().first()  # Assuming single school for simplicity
         stats = {
             'total_students': Student.objects.filter(is_deleted=False).count(),
             'total_teachers': Teacher.objects.filter(is_deleted=False).count(),
