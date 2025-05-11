@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "e86943450cd9830c83f610f3404c5697266dd3fffeab27fbdc553ae8789dfc7f"
+            "sha256": "08ec95340246110bd549838789736b6188a99ced97692247be17619c8be3dcc2"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -304,6 +304,13 @@
             "markers": "python_version >= '3.8' and python_version < '4.0'",
             "version": "==2.3.1"
         },
+        "dotenv": {
+            "hashes": [
+                "sha256:29cf74a087b31dafdb5a446b6d7e11cbce8ed2741540e2339c69fbef92c94ce9"
+            ],
+            "index": "pypi",
+            "version": "==0.9.9"
+        },
         "idna": {
             "hashes": [
                 "sha256:12f65c9b470abda6dc35cf8e63cc574b1c52b11df2c86030af0ac09b01b13ea9",
@@ -497,6 +504,14 @@
             "index": "pypi",
             "markers": "python_version >= '3.7'",
             "version": "==1.1.1"
+        },
+        "python-dotenv": {
+            "hashes": [
+                "sha256:41f90bc6f5f177fb41f53e87666db362025010eb28f60a01c9143bfa33a2b2d5",
+                "sha256:d7c01d9e2293916c18baf562d95698754b0dbbb5e74d457c45d4f6561fb9d55d"
+            ],
+            "markers": "python_version >= '3.9'",
+            "version": "==1.1.0"
         },
         "python3-openid": {
             "hashes": [

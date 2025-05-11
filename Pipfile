@@ -12,6 +12,7 @@ djangorestframework = "*"
 pymysql = "*"
 psycopg2-binary = "*"
 django-cors-headers = "*"
+dotenv = "*"
 
 [dev-packages]
 
