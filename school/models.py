@@ -54,6 +54,7 @@ class School(BaseModel):
     website = models.URLField(blank=True, null=True)
     established_date = models.DateField()
     logo = CloudinaryField('image', null=True, blank=True)
+
     general_password = models.CharField(max_length=255)  # New field for school password
 
     def __str__(self):
@@ -96,13 +97,21 @@ class Subject(BaseModel):
         unique=True
     )
     name = models.CharField(max_length=100)
-    code = models.CharField(max_length=10, unique=True, blank=True, null=True)
+    code = models.CharField(max_length=10, blank=True, null=True)
     description = models.TextField(blank=True, null=True)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = ('name', 'school')
 
+        constraints = [
+            models.UniqueConstraint(
+                fields=['code'],
+                condition=models.Q(is_active= True, is_deleted = False),
+                name='code'
+            )
+        ]
+        
     def __str__(self):
         return f"{self.name} ({self.school})"
 

@@ -80,7 +80,9 @@ class SchoolViewSet(SoftDeleteModelViewSet):
 
     @action(detail=True, methods=['post'])
     def upload_logo(self, request, pk=None):
+
         school = self.get_object()
+        print("request.data",request.data)
         serializer = SchoolLogoUploadSerializer(school, data=request.data)
         if serializer.is_valid():
             serializer.save()
@@ -144,7 +146,7 @@ class SubjectViewSet(SoftDeleteModelViewSet):
 
     @action(detail=False, methods=['get'])
     def teachers(self, request):
-        subject_id = request.query_params.get('subjectId', None)
+        subject_id = request.query_params.get('subject_id', None)
         if subject_id:
             subject = self.get_queryset().filter(id=subject_id).first()
             if subject:
@@ -152,18 +154,25 @@ class SubjectViewSet(SoftDeleteModelViewSet):
                 serializer = SubjectTeacherSerializer(teachers, many=True)
                 return Response(serializer.data)
         return Response({'detail': 'Subject ID required'}, status=status.HTTP_400_BAD_REQUEST)
-
     @action(detail=False, methods=['get'])
     def classes(self, request):
-        subject_id = request.query_params.get('subjectId', None)
-        if subject_id:
-            subject = self.get_queryset().filter(id=subject_id).first()
-            if subject:
-                classes = Class.objects.filter(subjects=subject)
-                serializer = SubjectClassSerializer(classes, many=True)
-                return Response(serializer.data)
-        return Response({'detail': 'Subject ID required'}, status=status.HTTP_400_BAD_REQUEST)
-
+        subject_id = request.query_params.get('subject_id', None)
+        if not subject_id:
+            return Response({'detail': 'Subject ID required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Get all classes where at least one teacher teaches this subject
+            classes = Class.objects.filter(
+                teachers__subjects__id=subject_id
+            ).distinct()
+            
+            serializer = SubjectClassSerializer(classes, many=True)
+            return Response(serializer.data)
+        except Exception as e:
+            return Response(
+                {'detail': str(e)}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ClassViewSet(SoftDeleteModelViewSet):
@@ -231,15 +240,6 @@ class TeacherViewSet(SoftDeleteModelViewSet):
         teacher = self.get_object()
         serializer = TeacherProfileSerializer(teacher)
         return Response(serializer.data)
-
-    @action(detail=True, methods=['post'])
-    def upload_photo(self, request, pk=None):
-        teacher = self.get_object()
-        serializer = TeacherPhotoUploadSerializer(teacher, data=request.data)
-        if serializer.is_valid():
-            serializer.save()
-            return Response(serializer.data)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=True, methods=['get'])
     def classes(self, request, pk=None):
@@ -489,12 +489,9 @@ class TeacherSchoolInfoView(APIView):
             } if hasattr(school, 'current_academic_year') else None
         })
         
-
-
 class StudentViewSet(SoftDeleteModelViewSet):
     queryset = Student.objects.select_related('user', 'current_class').filter(is_active=True, is_deleted=False)
-    pagination_class = StandardResultsSetPagination
-
+    serializer_class = StudentSerializer
 
 class AttendanceViewSet(SoftDeleteModelViewSet):
     queryset = StudentAttendance.objects.select_related('student', 'recorded_by').filter(is_active=True, is_deleted=False)

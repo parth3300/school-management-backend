@@ -74,10 +74,10 @@ EMAIL_USE_TLS = True
 
 
 MIDDLEWARE = [
-    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
-    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -157,6 +157,22 @@ if not DEBUG:
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+import cloudinary
+cloudinary.config( 
+  cloud_name = 'dal18b6wk',       # Replace with your cloud name
+  api_key = '294982374822612',             # Replace with your API key
+  api_secret = 'rQymIHFfvQ6-Cx36ZVh_NDvsf28'        # Replace with your API secret
+)
+
+# ✅ STATIC & MEDIA
+STATIC_URL = '/static/'
+
+if not DEBUG:
+    STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+    STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
+
 # ✅ Cloudinary media storage
 DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 
@@ -166,8 +182,6 @@ CLOUDINARY_STORAGE = {
     'API_SECRET': 'rQymIHFfvQ6-Cx36ZVh_NDvsf28',  # Replace with real secret
 }
 
-# If you still want to use MEDIA_URL (optional but not needed for Cloudinary)
-MEDIA_URL = '/media/'
 
 AUTH_USER_MODEL = 'school_user.User'
 
@@ -190,7 +204,7 @@ REST_FRAMEWORK = {
 # JWT Settings
 SIMPLE_JWT = {
     'AUTH_HEADER_TYPES': ('JWT',),
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(seconds=10),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "UPDATE_LAST_LOGIN": True,

@@ -39,7 +39,7 @@ school_urls = [
     path('school/login/', SchoolLoginView.as_view(), name='school-login'),
     path('schools/stats/', SchoolViewSet.as_view({'get': 'stats'}), name='school-stats'),
     path('schools/staff/', SchoolViewSet.as_view({'get': 'staff'}), name='school-staff'),
-    path('schools/<int:pk>/upload-logo/', SchoolViewSet.as_view({'post': 'upload_logo'}), name='school-upload-logo'),
+    path('schools/<str:pk>/upload-logo/', SchoolViewSet.as_view({'post': 'upload-logo'}), name='school-upload-logo'),
 ]
 
 # Academic Year URLs
@@ -65,13 +65,12 @@ class_urls = [
 
 # Teacher URLs
 teacher_urls = [
-    path('teachers/<int:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
-    path('teachers/<int:pk>/upload-photo/', TeacherViewSet.as_view({'post': 'upload_photo'}), name='teacher-upload-photo'),
-    path('teachers/<int:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
-    path('teachers/<int:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
-    path('teachers/<int:pk>/full-history/<int:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
-    path('teachers/<int:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects'}), name='teacher-subjects'),
-    path('teachers/attendance-stats/', TeacherViewSet.as_view({'get': 'attendance_stats'}), name='teacher-attendance-stats'),
+#     path('teachers/<int:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
+#     path('teachers/<int:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
+#     path('teachers/<int:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
+#     path('teachers/<int:pk>/full-history/<int:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
+#     path('teachers/<int:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects'}), name='teacher-subjects'),
+#     path('teachers/attendance-stats/', TeacherViewSet.as_view({'get': 'attendance_stats'}), name='teacher-attendance-stats'),
 ]
 
 # Student URLs

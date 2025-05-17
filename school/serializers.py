@@ -33,6 +33,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 class SchoolSerializer(BaseModelSerializer):
     general_password = serializers.CharField(write_only=True, required=False)
+    logo = serializers.ImageField(required=False)  # Handles uploads
 
     class Meta:
         model = School
@@ -78,24 +79,30 @@ class TeacherSerializer(BaseModelSerializer):
         fields = '__all__'
 
     def create(self, validated_data):
+        print("in updation")
+
         user_data = validated_data.pop('user')
         subjects = validated_data.pop('subjects', [])
         user = User.objects.create_user(**user_data)
         teacher = Teacher.objects.create(user=user, **validated_data)
         teacher.subjects.set(subjects)
         return teacher
-
     def update(self, instance, validated_data):
-        user_data = validated_data.pop('user', {})
+        print("in updation")
+        user_data = validated_data.pop('user', None)
         subjects = validated_data.pop('subjects', [])
-        user = instance.user
-        
-        for attr, value in user_data.items():
-            setattr(user, attr, value)
-        user.save()
 
+        # Update user data manually if provided
+        if user_data:
+            user = instance.user
+            for attr, value in user_data.items():
+                setattr(user, attr, value)
+            user.save()
+
+        # Update other teacher fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
+
         instance.save()
 
         if subjects is not None:
@@ -435,10 +442,19 @@ class SchoolStaffSerializer(serializers.ModelSerializer):
         return obj.user.email
 
 class SchoolLogoUploadSerializer(serializers.ModelSerializer):
+    logo = serializers.ImageField(required=False)  # Handles uploads
+
     class Meta:
         model = School
-        fields = ['logo']
+        fields = ['logo','id']
 
+    def update(self, instance, validated_data):
+        logo_file = validated_data.pop('logo')
+        print("loggggggg",logo_file, instance   )
+        instance.logo = logo_file  # This will trigger Cloudinary upload
+        instance.save()
+        return instance
+    
 class AcademicYearCurrentSerializer(serializers.ModelSerializer):
     class Meta:
         model = AcademicYear
