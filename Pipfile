@@ -13,6 +13,7 @@ pymysql = "*"
 psycopg2-binary = "*"
 django-cors-headers = "*"
 dotenv = "*"
+whitenoise = "*"
 
 [dev-packages]
 
