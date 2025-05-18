@@ -554,7 +554,7 @@ class StudentAttendanceSerializer(serializers.ModelSerializer):
 class AnnouncementSerializer(serializers.ModelSerializer):
     class Meta:
         model = Announcement
-        fields = ['id', 'title', 'message', 'start_date', 'priority']
+        fields = '__all__'
 
 # Main Teacher serializers
 class TeacherProfileSerializer(serializers.ModelSerializer):
