@@ -38,7 +38,7 @@ class UserManager(BaseUserManager):
 # Custom User Model.
 class User(AbstractBaseUser):
     ROLE_CHOICES = [
-        ('admin', 'Administrator'),
+        ('admin', 'Admin'),
         ('teacher', 'Teacher'),
         ('student', 'Student'),
         ('visitor', 'Visitor'),

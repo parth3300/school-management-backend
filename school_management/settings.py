@@ -229,6 +229,8 @@ DJOSER = {
         'user_create': 'school_user.serializers.UserCreateSerializer',
         'user': 'school_user.serializers.UserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
+        'token_create': 'school_user.serializers.CustomTokenCreateSerializer', 
+
     },
     'EMAIL': {
         'activation': 'school_user.email.ActivationEmail',
