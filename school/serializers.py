@@ -66,9 +66,9 @@ class AcademicYearSerializer(BaseModelSerializer):
 
 class TeacherSerializer(BaseModelSerializer):
     user = UserSerializer()
-    subjects = BasicSubjectSerializer(many=True, read_only=True)
+    subjects = serializers.SerializerMethodField()
     subject_ids = serializers.PrimaryKeyRelatedField(
-        queryset=Subject.objects.all(),
+        queryset=Subject.objects.filter(is_active=True, is_deleted = False),
         source='subjects',
         many=True,
         write_only=True
@@ -78,8 +78,20 @@ class TeacherSerializer(BaseModelSerializer):
         model = Teacher
         fields = '__all__'
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+
+        # If it's an update (partial or full), remove the user field
+        request = self.context.get('request', None)
+        if request and request.method in ['PUT', 'PATCH']:
+            self.fields.pop('user', None)
+
+
+    def get_subjects(self, obj):
+        filtered_subjects = obj.subjects.filter(is_active=True, is_deleted=False)
+        return BasicSubjectSerializer(filtered_subjects, many=True).data
+    
     def create(self, validated_data):
-        print("in updation")
 
         user_data = validated_data.pop('user')
         subjects = validated_data.pop('subjects', [])

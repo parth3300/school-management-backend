@@ -44,13 +44,13 @@ school_urls = [
 
 # Academic Year URLs
 academic_year_urls = [
-    path('academic-years/<int:pk>/set-current/', AcademicYearViewSet.as_view({'post': 'set_current'}), name='academic-year-set-current'),
+    path('academic-years/<str:pk>/set-current/', AcademicYearViewSet.as_view({'post': 'set_current'}), name='academic-year-set-current'),
     path('academic-years/current/', AcademicYearViewSet.as_view({'get': 'current'}), name='academic-year-current'),
 ]
 
 # Subject URLs
 subject_urls = [
-    path('subjects/<int:pk>/curriculum/', SubjectViewSet.as_view({'get': 'curriculum'}), name='subject-curriculum'),
+    path('subjects/<str:pk>/curriculum/', SubjectViewSet.as_view({'get': 'curriculum'}), name='subject-curriculum'),
     path('subjects/teachers/', SubjectViewSet.as_view({'get': 'teachers'}), name='subject-teachers'),
     path('subjects/classes/', SubjectViewSet.as_view({'get': 'classes'}), name='subject-classes'),
 ]
@@ -65,43 +65,43 @@ class_urls = [
 
 # Teacher URLs
 teacher_urls = [
-#     path('teachers/<int:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
-#     path('teachers/<int:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
-#     path('teachers/<int:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
-#     path('teachers/<int:pk>/full-history/<int:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
-#     path('teachers/<int:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects'}), name='teacher-subjects'),
+#     path('teachers/<str:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
+#     path('teachers/<str:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
+#     path('teachers/<str:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
+#     path('teachers/<str:pk>/full-history/<str:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
+#     path('teachers/<str:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects'}), name='teacher-subjects'),
 #     path('teachers/attendance-stats/', TeacherViewSet.as_view({'get': 'attendance_stats'}), name='teacher-attendance-stats'),
 ]
 
 # Student URLs
 student_urls = [
-    path('students/<int:pk>/profile/', StudentViewSet.as_view({'get': 'profile'}), name='student-profile'),
-    path('students/<int:pk>/upload-photo/', StudentViewSet.as_view({'post': 'upload_photo'}), name='student-upload-photo'),
-    path('students/<int:pk>/courses/', StudentViewSet.as_view({'get': 'courses'}), name='student-courses'),
-    path('students/<int:pk>/attendance/', StudentViewSet.as_view({'get': 'attendance'}), name='student-attendance'),
-    path('students/<int:pk>/results/', StudentViewSet.as_view({'get': 'results'}), name='student-results'),
+    path('students/<str:pk>/profile/', StudentViewSet.as_view({'get': 'profile'}), name='student-profile'),
+    path('students/<str:pk>/upload-photo/', StudentViewSet.as_view({'post': 'upload_photo'}), name='student-upload-photo'),
+    path('students/<str:pk>/courses/', StudentViewSet.as_view({'get': 'courses'}), name='student-courses'),
+    path('students/<str:pk>/attendance/', StudentViewSet.as_view({'get': 'attendance'}), name='student-attendance'),
+    path('students/<str:pk>/results/', StudentViewSet.as_view({'get': 'results'}), name='student-results'),
 ]
 
 # Attendance URLs
 attendance_urls = [
     path('attendance/by-date/', AttendanceViewSet.as_view({'get': 'by_date'}), name='attendance-by-date'),
-    path('attendance/by-class/<int:class_id>/', AttendanceViewSet.as_view({'get': 'by_class'}), name='attendance-by-class'),
-    path('attendance/by-student/<int:student_id>/', AttendanceViewSet.as_view({'get': 'by_student'}), name='attendance-by-student'),
+    path('attendance/by-class/<str:class_id>/', AttendanceViewSet.as_view({'get': 'by_class'}), name='attendance-by-class'),
+    path('attendance/by-student/<str:student_id>/', AttendanceViewSet.as_view({'get': 'by_student'}), name='attendance-by-student'),
     path('attendance/bulk-update/', AttendanceViewSet.as_view({'post': 'bulk_update'}), name='attendance-bulk-update'),
     path('attendance/monthly-stats/', AttendanceViewSet.as_view({'get': 'monthly_stats'}), name='attendance-monthly-stats'),
-    path('attendance/class-stats/<int:class_id>/', AttendanceViewSet.as_view({'get': 'class_stats'}), name='attendance-class-stats'),
+    path('attendance/class-stats/<str:class_id>/', AttendanceViewSet.as_view({'get': 'class_stats'}), name='attendance-class-stats'),
 ]
 
 # Exam URLs
 exam_urls = [
     path('exams/by-academic-year/', ExamViewSet.as_view({'get': 'by_academic_year'}), name='exam-by-academic-year'),
-    path('exams/<int:pk>/schedule/', ExamViewSet.as_view({'get': 'schedule'}), name='exam-schedule'),
+    path('exams/<str:pk>/schedule/', ExamViewSet.as_view({'get': 'schedule'}), name='exam-schedule'),
 ]
 
 # Exam Result URLs
 exam_result_urls = [
-    path('exam-results/class-summary/<int:class_id>/', ExamResultViewSet.as_view({'get': 'class_summary'}), name='exam-result-class-summary'),
-    path('exam-results/student-summary/<int:student_id>/', ExamResultViewSet.as_view({'get': 'student_summary'}), name='exam-result-student-summary'),
+    path('exam-results/class-summary/<str:class_id>/', ExamResultViewSet.as_view({'get': 'class_summary'}), name='exam-result-class-summary'),
+    path('exam-results/student-summary/<str:student_id>/', ExamResultViewSet.as_view({'get': 'student_summary'}), name='exam-result-student-summary'),
 ]
 
 # Announcement URLs
@@ -109,8 +109,8 @@ announcement_urls = [
     path('announcements/active/', AnnouncementViewSet.as_view({'get': 'active'}), name='announcement-active'),
     path('announcements/pinned/', AnnouncementViewSet.as_view({'get': 'pinned'}), name='announcement-pinned'),
     path('announcements/by-audience/', AnnouncementViewSet.as_view({'get': 'by_audience'}), name='announcement-by-audience'),
-    path('announcements/<int:pk>/upload-attachment/', AnnouncementViewSet.as_view({'post': 'upload_attachment'}), name='announcement-upload-attachment'),
-    path('announcements/<int:pk>/pin/', AnnouncementViewSet.as_view({'post': 'pin'}), name='announcement-pin'),
+    path('announcements/<str:pk>/upload-attachment/', AnnouncementViewSet.as_view({'post': 'upload_attachment'}), name='announcement-upload-attachment'),
+    path('announcements/<str:pk>/pin/', AnnouncementViewSet.as_view({'post': 'pin'}), name='announcement-pin'),
     path('announcements/upcoming/', AnnouncementViewSet.as_view({'get': 'upcoming'}), name='announcement-upcoming'),
     path('announcements/expired/', AnnouncementViewSet.as_view({'get': 'expired'}), name='announcement-expired'),
     path('announcements/for-user/', AnnouncementViewSet.as_view({'get': 'for_user'}), name='announcement-for-user'),
