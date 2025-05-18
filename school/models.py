@@ -149,13 +149,9 @@ class Teacher(BaseModel):
         unique=True
     )
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    phone = models.CharField(max_length=15)
-    address = models.TextField()
-    date_of_birth = models.DateField()
     joining_date = models.DateField()
     qualification = models.CharField(max_length=100)
     subjects = models.ManyToManyField(Subject, blank=True, related_name='teachers')
-    photo = CloudinaryField('image', null=True, blank=True)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -179,10 +175,6 @@ class Student(BaseModel):
     )
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     admission_number = models.CharField(max_length=20, unique=True)
-    date_of_birth = models.DateField()
-    gender = models.CharField(max_length=1, choices=GENDER_CHOICES)
-    address = models.TextField()
-    phone = models.CharField(max_length=15, blank=True, null=True)
     parent_name = models.CharField(max_length=100)
     parent_phone = models.CharField(max_length=15)
     admission_date = models.DateField()
@@ -192,7 +184,6 @@ class Student(BaseModel):
         null=True,
         blank=True
     )
-    photo = CloudinaryField('image', null=True, blank=True)
     school = models.ForeignKey(School, on_delete=models.CASCADE)
 
     class Meta:

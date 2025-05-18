@@ -21,7 +21,7 @@ class BaseModelSerializer(serializers.ModelSerializer):
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'first_name', 'last_name', 'email', 'password']
+        fields = [ 'name','first_name', 'last_name', 'email', 'password','date_of_birth','gender','address','phone', 'photo', 'role']
         extra_kwargs = {'password': {'write_only': True}}
         
     def get_fields(self):
@@ -168,7 +168,13 @@ class StudentSerializer(BaseModelSerializer):
     class Meta:
         model = Student
         fields = '__all__'
-        extra_kwargs = {'admission_number': {'required': False, 'allow_null': True}}
+        extra_kwargs = {
+            'admission_number': {
+                'required': False,
+                'allow_null': True,
+                'read_only': True
+            }
+        }
 
     def create(self, validated_data):
         if 'admission_number' not in validated_data or not validated_data['admission_number']:

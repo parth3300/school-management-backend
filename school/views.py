@@ -109,7 +109,7 @@ class SchoolLoginView(APIView):
         if school.check_general_password(password):
             return Response({'detail': 'School login successful.'}, status=status.HTTP_200_OK)
         else:
-            return Response({'detail': 'Invalid school password.'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'detail': 'Invalid school password.'}, status=status.HTTP_400_BAD_REQUEST)
 
 class AcademicYearViewSet(SoftDeleteModelViewSet):
     queryset = AcademicYear.objects.filter(is_active=True, is_deleted=False)
