@@ -1198,9 +1198,9 @@ def activate_user(request, uidb64, token):
         user.is_active = True
         user.save()
         messages.success(request, "✅ Your account has been activated. You can now log in.")
-        redirect_url = f"{FRONT_END_URL}/{user.role}-login"
+        redirect_url = f"{FRONT_END_URL}/{user.role}-login?school_id={user.school.id}"
 
         return redirect(redirect_url)
     else:
         messages.error(request, "❌ Activation link is invalid or has expired.")
-        return render(request, 'school/activation_failed.html')  # Regular Django template response
+        return render(request, 'school_user/activation_failed.html')  # Regular Django template response

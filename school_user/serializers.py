@@ -4,7 +4,6 @@ from django.contrib.auth import authenticate
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from school_user.models import User
-from school.models import School
 
 
 class CustomUserCreateSerializer(UserCreateSerializer):
@@ -69,34 +68,23 @@ class CustomTokenCreateSerializer(TokenCreateSerializer):
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     role = serializers.CharField(required=True)
+    school = serializers.CharField(required=True)
 
     def validate(self, attrs):
         print("Login Attempt - Email:", attrs.get('email'))
         print("Login Attempt - Password:", attrs.get('password'))
-        print("Login Attempt - Role:", attrs.get('role'))
 
-        email = attrs.get("email")
-        password = attrs.get("password")
-        role = attrs.get("role")
 
-        user = authenticate(
-            request=self.context.get('request'),
-            email=email,
-            password=password
-        )
+        email = attrs.get('email')
+        role = attrs.get('role')
+        school = attrs.get('school')
 
-        print("Authenticated user in CustomTokenObtainPairSerializer:", user)
-
+        # First, check if user with email, role, and school_id exists
+        user = User.objects.get(email=email, role=role, school_id=school)
+        
         if not user or user.role != role:
             raise serializers.ValidationError("Invalid credentials or role mismatch.")
-
+     
         data = super().validate(attrs)
 
-        # Add extra user info to the token response
-        data['user'] = {
-            "id": user.id,
-            "email": user.email,
-            "role": user.role,
-            "name": user.name,
-        }
         return data
