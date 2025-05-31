@@ -49,13 +49,12 @@ class SoftDeleteModelViewSet(viewsets.ModelViewSet):
                     serializer.fields.pop(field)
         return serializer
 
-# ViewSets with soft delete applied
 class SchoolViewSet(SoftDeleteModelViewSet):
     queryset = School.objects.filter(is_active=True, is_deleted=False)
     serializer_class = SchoolSerializer
-        
+    permission_classes = [AllowAny]  # ✅ Entire ViewSet is public
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])  # ✅ Optional, but explicit
     def stats(self, request):
         stats = {
             'total_students': Student.objects.filter(is_deleted=False).count(),
@@ -66,23 +65,21 @@ class SchoolViewSet(SoftDeleteModelViewSet):
         serializer = SchoolStatsSerializer(stats)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=['get'], permission_classes=[AllowAny])
     def staff(self, request):
         role = request.query_params.get('role', None)
         teachers = Teacher.objects.filter(is_deleted=False)
-        
+
+        # You can optionally filter by role here if implemented
         if role:
-            # You might need to add role field to Teacher model or use user groups
             pass
-            
+
         serializer = SchoolStaffSerializer(teachers, many=True)
         return Response(serializer.data)
 
-    @action(detail=True, methods=['post'])
+    @action(detail=True, methods=['post'], permission_classes=[AllowAny])
     def upload_logo(self, request, pk=None):
-
         school = self.get_object()
-        print("request.data",request.data)
         serializer = SchoolLogoUploadSerializer(school, data=request.data)
         if serializer.is_valid():
             serializer.save()

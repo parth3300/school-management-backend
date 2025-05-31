@@ -50,37 +50,28 @@ INSTALLED_APPS = [
 
 ]
 
-# DATABASE_URL = "postgresql://postgres:zbgnzDkTejpZwxxvyxzpQpfHGFWGXUYw@tramway.proxy.rlwy.net:45008/railway"
+DATABASE_URL = "postgresql://postgres.hrlgfhcbdddebdeusbdi:eE6qcrG9q_nqaNU@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
 
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': DATABASE_URL.rsplit('/', 1)[-1],
-#         'USER': DATABASE_URL.split('//')[1].split(':')[0],
-#         'PASSWORD': DATABASE_URL.split(':')[2].split('@')[0],
-#         'HOST': DATABASE_URL.split('@')[1].split(':')[0],
-#         'PORT': DATABASE_URL.rsplit(':', 1)[-1].split('/')[0],
-#         'CONN_MAX_AGE': 600,
-#     }
-# }
-BASE_DIR = Path(__file__).resolve().parent.parent
-POSTGRES_URL="postgres://019700da-26f1-7e01-b19f-9ad3cace01a6:3c755367-71a6-4b95-899c-ad14670392f0@eu-central-1.db.thenile.dev/nile_blue_mountain"
-NILEDB_URL="postgres://019700da-26f1-7e01-b19f-9ad3cace01a6:3c755367-71a6-4b95-899c-ad14670392f0@eu-central-1.db.thenile.dev/nile_blue_mountain"
-NILEDB_PASSWORD="3c755367-71a6-4b95-899c-ad14670392f0"
-NILEDB_USER="019700da-26f1-7e01-b19f-9ad3cace01a6"
-NILEDB_API_URL="https://eu-central-1.api.thenile.dev/v2/databases/019700da-238f-732b-b04f-19f54f5c500b"
-NILEDB_POSTGRES_URL="postgres://eu-central-1.db.thenile.dev/nile_blue_mountain"
 DATABASES = {
     'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',  # This creates the SQLite file in your project directory
-        'USER': '019700d8-95f5-7d19-8984-b51f509f5c6a',
-        'PASSWORD': '754dbad9-1b86-4708-ac75-58c1a8377684',
-        'HOST': 'eu-central-1.db.thenile.dev',
-        'PORT': '5432',  # Default PostgreSQL port
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': DATABASE_URL.rsplit('/', 1)[-1],
+        'USER': DATABASE_URL.split('//')[1].split(':')[0],
+        'PASSWORD': DATABASE_URL.split(':')[2].split('@')[0],
+        'HOST': DATABASE_URL.split('@')[1].split(':')[0],
+        'PORT': DATABASE_URL.rsplit(':', 1)[-1].split('/')[0],
         'CONN_MAX_AGE': 600,
     }
 }
+
+
+# BASE_DIR = Path(__file__).resolve().parent.parent
+# DATABASES = {
+#     'default': {
+#         'ENGINE': 'django.db.backends.sqlite3',
+#         'NAME': BASE_DIR / 'db.sqlite3',
+#     }
+# }
 
 
 # Email Configuration
