@@ -63,8 +63,6 @@ DATABASES = {
         'CONN_MAX_AGE': 600,
     }
 }
-
-
 # BASE_DIR = Path(__file__).resolve().parent.parent
 # DATABASES = {
 #     'default': {
@@ -204,6 +202,8 @@ SIMPLE_JWT = {
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "ROTATE_REFRESH_TOKENS": True,
     "UPDATE_LAST_LOGIN": True,
+    'TOKEN_OBTAIN_SERIALIZER': 'school_user.serializers.CustomTokenObtainPairSerializer',
+
 }
 
 LOGGING = {
@@ -226,7 +226,7 @@ LOGGING = {
 # Djoser Settings
 DJOSER = {
     'LOGIN_FIELD': 'email',
-    'USER_CREATE_PASSWORD_RETYPE':True,
+    # 'USER_CREATE_PASSWORD_RETYPE':True,
     'ACTIVATION_URL':'/activate/{uid}/{token}',
     'SEND_ACTIVATION_EMAIL':True,
     'SEND_CONFIRMATION_EMAIL':True,
@@ -236,10 +236,10 @@ DJOSER = {
     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
     'TOKEN_MODEL': None,       # To Delete User Must Set it to None
     'SERIALIZERS':{
-        'user_create': 'school_user.serializers.UserCreateSerializer',
-        'user': 'school_user.serializers.UserCreateSerializer',
+        'user_create': 'school_user.serializers.CustomUserCreateSerializer',
+        'user': 'school_user.serializers.CustomUserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
-        'token_create': 'school_user.serializers.CustomTokenCreateSerializer', 
+        'token_create': 'school_user.serializers.CustomTokenCreateSerializer',
 
     },
     'EMAIL': {

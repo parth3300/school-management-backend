@@ -1,42 +1,49 @@
 {% load i18n %}
 
 {% block subject %}
-{% blocktrans %}{{ site_name }} - Your account has been successfully created and activated!{% endblocktrans %}
+  {% blocktrans %}{{ site_name }} - Your account has been successfully created and activated!{% endblocktrans %}
 {% endblock %}
 
 {% block text_body %}
-{% trans "Your account has been created and is ready to use!" %}
-
+  {% trans "Your account has been created and is ready to use!" %}
 {% endblock text_body %}
 
 {% block html_body %}
-<p>{% trans "Your account has been created and is ready to use!" %}</p>
+<div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f9f9f9; padding: 40px;">
+  <div style="max-width: 600px; margin: auto; background-color: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05); text-align: center;">
+    
+    <h2 style="color: #2f855a; font-size: 24px; margin-bottom: 10px;">
+      {% trans "🎉 Your account is activated!" %}
+    </h2>
 
-<p style="margin-bottom:100px"><a
-    style="display: inline-block; padding: 10px 20px; background-color:   #51ad2d  ; color: white; text-decoration: none;"
-    href="{{ protocol }}://{{ domain }}/account/login">Login to Account</a></p>
+    <p style="color: #4a5568; font-size: 16px; margin-bottom: 30px;">
+      {% trans "You can now access your dashboard and start using the platform." %}
+    </p>
 
-<span>Follow us: </span>
-<div style="display: flex; justify-content: center; align-items: center;">
-  <a href="#"
-    style="margin: 5px; padding: 5px ; border-radius: 10%; background-color: #E1306C; color: white; text-decoration: none; font-size:10px">
-    Instagram
-  </a>
-  <a href="#"
-    style="margin: 5px; padding: 5px ; border-radius: 10%; background-color: #1da1f2; color: white; text-decoration: none; font-size:10px">
-    Twitter
-  </a>
-  <a href="#"
-    style="margin: 5px; padding: 5px ; border-radius: 10%; background-color: #0077B5; color: white; text-decoration: none; font-size:10px">
-    LinkedIn
-  </a>
-  <a href="#"
-    style="margin: 5px; padding: 5px ; border-radius: 10%; background-color: #ff0000; color: white; text-decoration: none; font-size:10px">
-    Youtube
-  </a>
+    <a href="{{ protocol }}://{{ domain }}/account/login"
+       style="background-color: #38a169; padding: 14px 28px; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 16px;">
+      {% trans "Login to Your Account" %}
+    </a>
+
+    <hr style="margin: 40px 0; border-color: #e2e8f0;">
+
+    <p style="color: #4a5568; font-size: 14px; margin-bottom: 8px;">
+      {% trans "Follow us on social media:" %}
+    </p>
+
+    <div style="display: flex; justify-content: center; gap: 10px; margin-bottom: 20px;">
+      <a href="#" style="background-color: #E1306C; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">Instagram</a>
+      <a href="#" style="background-color: #1DA1F2; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">Twitter</a>
+      <a href="#" style="background-color: #0077B5; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">LinkedIn</a>
+      <a href="#" style="background-color: #FF0000; color: white; padding: 8px 12px; text-decoration: none; border-radius: 4px; font-size: 13px;">YouTube</a>
+    </div>
+
+    <p style="margin-top: 20px; color: #718096; font-size: 13px;">
+      <i>
+        {% blocktrans %}If you face any difficulties logging in, please contact us at:{% endblocktrans %}
+        <a href="mailto:contact@geekyshows.com" style="color: #2b6cb0;">contact@geekyshows.com</a>
+      </i>
+    </p>
+  </div>
 </div>
-
-<i>{% blocktrans %}If you face difficulties in Login to your account kindly contact us on:
-  contact@geekyshows.com {% endblocktrans %}</i>
-
 {% endblock html_body %}

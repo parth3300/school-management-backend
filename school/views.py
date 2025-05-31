@@ -16,6 +16,14 @@ from .permissions import IsTeacher
 from django.contrib.auth import get_user_model
 from djoser.views import UserViewSet as DjoserUserViewSet
 from django.contrib.auth.hashers import check_password
+from django.shortcuts import render, redirect
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
+from django.contrib import messages
+import os
+from dotenv import load_dotenv
+load_dotenv()
+FRONT_END_URL = os.environ.get('FRONT_END_URL')
 
 User = get_user_model()
 
@@ -1173,3 +1181,26 @@ class UserViewSet(DjoserUserViewSet):
             # Email verification logic goes here
             return Response({'status': 'Email verified'})
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+def activate_user(request, uidb64, token):
+    try:
+        print(f"Decoding uidb64: {uidb64}")
+        uid = urlsafe_base64_decode(uidb64).decode()
+        print(f"Decoded uid: {uid}")
+        
+        user = User.objects.get(pk=uid)
+        print(f"User found: {user}")
+    except (User.DoesNotExist, ValueError, TypeError, OverflowError) as e:
+        print(f"Exception occurred: {e}")
+        user = None
+
+    if user is not None and default_token_generator.check_token(user, token):
+        user.is_active = True
+        user.save()
+        messages.success(request, "✅ Your account has been activated. You can now log in.")
+        redirect_url = f"{FRONT_END_URL}/{user.role}-login"
+
+        return redirect(redirect_url)
+    else:
+        messages.error(request, "❌ Activation link is invalid or has expired.")
+        return render(request, 'school/activation_failed.html')  # Regular Django template response

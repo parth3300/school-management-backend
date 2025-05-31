@@ -127,6 +127,8 @@ user_urls = [
     path('users/change-password/', UserViewSet.as_view({'post': 'change_password'}), name='user-change-password'),
     path('users/reset-password/', UserViewSet.as_view({'post': 'reset_password'}), name='user-reset-password'),
     path('users/verify-email/', UserViewSet.as_view({'post': 'verify_email'}), name='user-verify-email'),
+    path('users/activate/<uidb64>/<token>/', activate_user, name='activate_user'),
+
 ]
 
 # Combine all URL patterns
