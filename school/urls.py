@@ -22,7 +22,8 @@ router.register(r'users', UserViewSet)
 
 urlpatterns = [
     path('', include(router.urls)),
-    
+    path("reseed/", reseed_database, name="reseed-db"),
+
     # Additional custom URLs
     path('exam-results-summary/', ExamResultsSummaryView.as_view(), name='exam-results-summary'),
     path('teacher-dashboard/', TeacherDashboardView.as_view(), name='teacher-dashboard'),
@@ -133,6 +134,7 @@ user_urls = [
 
 # Combine all URL patterns
 urlpatterns += (
+
     school_urls +
     academic_year_urls +
     subject_urls +

@@ -65,26 +65,38 @@ class CustomTokenCreateSerializer(TokenCreateSerializer):
         attrs['user'] = user
         return attrs
 
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework import serializers
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     role = serializers.CharField(required=True)
     school = serializers.CharField(required=True)
 
     def validate(self, attrs):
-        print("Login Attempt - Email:", attrs.get('email'))
-        print("Login Attempt - Password:", attrs.get('password'))
-
+        print("\n🔐 Login Attempt:")
+        print("   📧 Email     :", attrs.get('email'))
+        print("   🔑 Password  :", attrs.get('password'))
+        print("   🧑‍🏫 Role      :", attrs.get('role'))
+        print("   🏫 School ID :", attrs.get('school'))
 
         email = attrs.get('email')
         role = attrs.get('role')
         school = attrs.get('school')
 
-        # First, check if user with email, role, and school_id exists
-        user = User.objects.get(email=email, role=role, school_id=school)
-        
-        if not user or user.role != role:
-            raise serializers.ValidationError("Invalid credentials or role mismatch.")
-     
-        data = super().validate(attrs)
+        try:
+            user = User.objects.get(email=email, role=role, school_id=school)
+            print("✅ User found:", user)
+        except User.DoesNotExist:
+            print("❌ User with provided email/role/school not found.")
+            raise serializers.ValidationError("Invalid credentials or user not found.")
+        except Exception as e:
+            print("🔥 Unexpected error:", str(e))
+            raise serializers.ValidationError(f"Unexpected error: {str(e)}")
 
+        print("✅ Proceeding with JWT token validation...")
+        data = super().validate(attrs)
+        print("✅ Token issued.")
         return data

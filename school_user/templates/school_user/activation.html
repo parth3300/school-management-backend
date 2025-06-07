@@ -1,14 +1,5 @@
 {% load i18n %}
 
-{% block subject %}
-  {% blocktrans %}{{ site_name }} - Activate your account{% endblocktrans %}
-{% endblock %}
-
-{% block text_body %}
-  {% blocktrans %}Please click the link below to activate your account:{% endblocktrans %}
-  {{ activation_url }}
-{% endblock text_body %}
-
 {% block html_body %}
   <div style="font-family: 'Segoe UI', Roboto, sans-serif; background-color: #f9f9f9; padding: 40px;">
     <div style="max-width: 600px; margin: auto; background-color: white; border-radius: 8px; padding: 30px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);">

@@ -49,7 +49,7 @@ class School(BaseModel):
     )
     name = models.CharField(max_length=100)
     address = models.TextField()
-    phone = models.CharField(max_length=15)
+    phone = models.CharField(max_length=20)
     email = models.EmailField()
     website = models.URLField(blank=True, null=True)
     established_date = models.DateField()
@@ -176,7 +176,7 @@ class Student(BaseModel):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     admission_number = models.CharField(max_length=20, unique=True)
     parent_name = models.CharField(max_length=100)
-    parent_phone = models.CharField(max_length=15)
+    parent_phone = models.CharField(max_length=20)
     admission_date = models.DateField()
     current_class = models.ForeignKey(
         Class,

@@ -20,12 +20,17 @@ from django.shortcuts import render, redirect
 from django.utils.http import urlsafe_base64_decode
 from django.contrib.auth.tokens import default_token_generator
 from django.contrib import messages
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAdminUser
+from school.utils.seed import populate
 import os
 from dotenv import load_dotenv
 load_dotenv()
 FRONT_END_URL = os.environ.get('FRONT_END_URL')
-
+RESEED_PASS = os.environ.get('RESEED_PASS')
 User = get_user_model()
+# views.py
 
 # Custom paginator
 class StandardResultsSetPagination(PageNumberPagination):
@@ -1121,12 +1126,7 @@ class ClassScheduleViewSet(viewsets.ModelViewSet):
             )   
             
             
-# views.py
-from rest_framework.decorators import api_view
-from rest_framework.response import Response
-from rest_framework import status
-from django.contrib.auth import get_user_model
-from django.contrib.auth.hashers import check_password
+
 class UserViewSet(DjoserUserViewSet):
     """
     Custom user viewset that extends Djoser and includes:
@@ -1204,3 +1204,16 @@ def activate_user(request, uidb64, token):
     else:
         messages.error(request, "❌ Activation link is invalid or has expired.")
         return render(request, 'school_user/activation_failed.html')  # Regular Django template response
+    
+    
+
+@api_view(["POST"])
+def reseed_database(request):
+    password = request.data.get("password")
+
+    print(password,RESEED_PASS)
+    if password != RESEED_PASS:  # replace with your own password
+        return Response({"detail": "Invalid reseed password."}, status=status.HTTP_403_FORBIDDEN)
+
+    summary = populate()
+    return Response({"detail": "Database reseeded", "summary": summary})
