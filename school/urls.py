@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
-
+from bot.views import meeting_bot_view
 router = DefaultRouter()
 
 # ModelViewSets
@@ -23,6 +23,7 @@ router.register(r'users', UserViewSet)
 urlpatterns = [
     path('', include(router.urls)),
     path("reseed/", reseed_database, name="reseed-db"),
+    path('meeting-bot/', meeting_bot_view, name='meeting-bot'),
 
     # Additional custom URLs
     path('exam-results-summary/', ExamResultsSummaryView.as_view(), name='exam-results-summary'),

@@ -45,7 +45,8 @@ INSTALLED_APPS = [
     'school_user',
     'rest_framework',
     'djoser',
-    "corsheaders"
+    "corsheaders",
+    "bot"
 
 
 ]
