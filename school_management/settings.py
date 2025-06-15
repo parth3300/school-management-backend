@@ -81,12 +81,12 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASS')
 EMAIL_USE_TLS = True
 
 # Google Meet Bot Credentials
-MEET_BOT_EMAIL = EMAIL_HOST_USER
-MEET_BOT_PASSWORD = EMAIL_HOST_PASSWORD
+# MEET_BOT_EMAIL = EMAIL_HOST_USER
+# MEET_BOT_PASSWORD = EMAIL_HOST_PASSWORD
 
-# Recording settings
-RECORDINGS_DIR = os.path.join(BASE_DIR, 'recordings')
-os.makedirs(RECORDINGS_DIR, exist_ok=True)
+# # Recording settings
+# RECORDINGS_DIR = os.path.join(BASE_DIR, 'recordings')
+# os.makedirs(RECORDINGS_DIR, exist_ok=True)
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
