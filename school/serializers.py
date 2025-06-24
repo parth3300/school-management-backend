@@ -1,5 +1,3 @@
-import random
-import string
 from rest_framework import serializers
 from django.contrib.auth import get_user_model
 from django.db.models import Count, Avg, Q
@@ -122,6 +120,32 @@ class TeacherSerializer(BaseModelSerializer):
 
         return instance
 
+
+class TeacherClassSerializer(serializers.ModelSerializer):
+    academic_year = serializers.StringRelatedField()
+    school = serializers.StringRelatedField()
+
+    class Meta:
+        model = Class
+        fields = [
+            'id',
+            'name',
+            'academic_year',
+            'capacity',
+            'school',
+        ]
+class TeacherSubjectSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subject
+        fields = [
+            'id',
+            'name',
+            'code',
+            'description',
+            'school',
+        ]
+        
+        
 class BasicClassSerializer(serializers.ModelSerializer):
     academic_year = serializers.StringRelatedField()
     

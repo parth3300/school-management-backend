@@ -244,19 +244,22 @@ class ClassViewSet(SoftDeleteModelViewSet):
 class TeacherViewSet(SoftDeleteModelViewSet):
     queryset = Teacher.objects.filter(is_active=True, is_deleted=False)
     serializer_class = TeacherSerializer
-    
+
     @action(detail=True, methods=['get'])
     def profile(self, request, pk=None):
         teacher = self.get_object()
         serializer = TeacherProfileSerializer(teacher)
         return Response(serializer.data)
-
     @action(detail=True, methods=['get'])
     def classes(self, request, pk=None):
-        teacher = self.get_object()
-        classes = teacher.classes.all()
-        serializer = TeacherClassSerializer(classes, many=True)
-        return Response(serializer.data)
+        print("Fetching classes for teacher with pk:", pk)
+        try:
+            teacher = Teacher.objects.get(user_id=pk)
+            classes = teacher.classes.all()  # related_name='classes' in your Class model
+            serializer = TeacherClassSerializer(classes, many=True)
+            return Response(serializer.data)
+        except Teacher.DoesNotExist:
+            return Response({"detail": "Teacher not found."}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['get'])
     def students(self, request, pk=None):
@@ -293,8 +296,13 @@ class TeacherViewSet(SoftDeleteModelViewSet):
             return Response({'detail': 'Student not found'}, status=status.HTTP_404_NOT_FOUND)
 
     @action(detail=True, methods=['get'])
-    def subjects(self, request, pk=None):
-        teacher = self.get_object()
+    def subjects_by_user(self, request, user_id=None):
+        print("User ID:", user_id)
+        try:
+            teacher = Teacher.objects.get(user_id=user_id)
+        except Teacher.DoesNotExist:
+            return Response({"detail": "Teacher not found."}, status=status.HTTP_404_NOT_FOUND)
+
         subjects = teacher.subjects.all()
         serializer = TeacherSubjectSerializer(subjects, many=True)
         return Response(serializer.data)

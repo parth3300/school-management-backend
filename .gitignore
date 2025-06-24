@@ -4,3 +4,7 @@ __pycache__/
 *.pyd
 .env
 command.txt
+google_calender.json
+google_calender2.json
+google_calender3.json
+token.json

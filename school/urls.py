@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from .views import *
-from bot.views import meeting_bot_view
+from bot.views import meeting_bot_view, create_google_meet
 router = DefaultRouter()
 
 # ModelViewSets
@@ -24,6 +24,7 @@ urlpatterns = [
     path('', include(router.urls)),
     path("reseed/", reseed_database, name="reseed-db"),
     path('meeting-bot/', meeting_bot_view, name='meeting-bot'),
+    path('create-meeting/', create_google_meet, name='create-meeting'),
 
     # Additional custom URLs
     path('exam-results-summary/', ExamResultsSummaryView.as_view(), name='exam-results-summary'),
@@ -67,12 +68,12 @@ class_urls = [
 
 # Teacher URLs
 teacher_urls = [
-#     path('teachers/<str:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
-#     path('teachers/<str:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
-#     path('teachers/<str:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
-#     path('teachers/<str:pk>/full-history/<str:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
-#     path('teachers/<str:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects'}), name='teacher-subjects'),
-#     path('teachers/attendance-stats/', TeacherViewSet.as_view({'get': 'attendance_stats'}), name='teacher-attendance-stats'),
+    path('teachers/<str:pk>/profile/', TeacherViewSet.as_view({'get': 'profile'}), name='teacher-profile'),
+    path('teachers/<str:pk>/classes/', TeacherViewSet.as_view({'get': 'classes'}), name='teacher-classes'),
+    path('teachers/<str:pk>/students/', TeacherViewSet.as_view({'get': 'students'}), name='teacher-students'),
+    path('teachers/<str:pk>/full-history/<str:student_id>/', TeacherViewSet.as_view({'get': 'full_history'}), name='teacher-student-full-history'),
+    path('teachers/<str:pk>/subjects/', TeacherViewSet.as_view({'get': 'subjects_by_user'}), name='teacher-subjects'),
+    path('teachers/attendance-stats/', TeacherViewSet.as_view({'get': 'attendance_stats'}), name='teacher-attendance-stats'),
 ]
 
 # Student URLs

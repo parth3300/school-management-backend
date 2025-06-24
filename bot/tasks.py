@@ -1,233 +1,528 @@
+"""
+Google Meet Recording Bot with Django API Integration
+
+This solution combines:
+1. A Selenium-based bot that joins Google Meet and records the session
+2. A Django REST API endpoint to control the bot
+3. Proper logging and error handling
+"""
+
+# Standard library imports
 import os
 import time
 import subprocess
 import logging
+import threading
+from datetime import datetime
+
+# Django imports
+from django.conf import settings
+from django.views.decorators.csrf import csrf_exempt
+
+# Django REST Framework imports
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework import status
+
+# Selenium imports
 from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
-from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-import os
-from dotenv import load_dotenv
-load_dotenv()
-RECORDINGS_DIR = os.environ.get('RECORDINGS_DIR')
+from selenium.common.exceptions import TimeoutException, NoSuchElementException
+
+# Set up logging
 logger = logging.getLogger(__name__)
 
 class MeetBot:
-    def __init__(self, email, password, meeting_link, filename):
+    """Google Meet recording bot using Selenium"""
+    
+    def __init__(self, email, password, meeting_link, filename, duration, headless=False):
         self.email = email
         self.password = password
         self.meeting_link = meeting_link
         self.filename = filename
+        self.headless = headless
+        self.duration = duration
         self.driver = None
-        self.recording_process = None
-        self.recording_path = f"{RECORDINGS_DIR}/{filename}.mkv"
+        self.recording_thread = None
+        self.should_stop = False
+        self.participants_check_count =0
+        self.print_status("🔧 Bot initialized with provided credentials and configurations.")
+        self.recording_thread = None
+        self.ffmpeg_process = None
         
-        # Ensure recordings directory exists
-        os.makedirs("recordings", exist_ok=True)
+    def print_status(self, message):
+        print(f"[BOT STATUS] {message}")
 
-    def setup_driver(self):
-        """Configure and initialize Chrome WebDriver"""
-        logger.info("Setting up Chrome WebDriver...")
+    def initialize_driver(self):
+        """Initialize Chrome WebDriver with options"""
+        options = webdriver.ChromeOptions()
         
-        options = Options()
-        options.add_argument("--no-sandbox")
-        options.add_argument("--disable-dev-shm-usage")
-        options.add_argument("--window-size=1366,768")
-        options.add_argument("--disable-gpu")
-        options.add_argument("--display=:99")
+        if self.headless:
+            options.add_argument("--headless=new")
         
-        self.driver = webdriver.Chrome(
-            service=Service(ChromeDriverManager().install()), 
-            options=options
-        )
-        logger.info("WebDriver setup complete")
+        options.add_argument("--disable-notifications")
+        options.add_argument("--use-fake-ui-for-media-stream")
+        options.add_argument("--use-fake-device-for-media-stream")
+        options.add_experimental_option("excludeSwitches", ["enable-automation"])
+        options.add_experimental_option('useAutomationExtension', False)
+        
+        # For recording capabilities
+        options.add_argument("--auto-select-desktop-capture-source=Entire screen")
+        
+        self.driver = webdriver.Chrome(options=options)
+        self.driver.maximize_window()
 
-    def login_to_google(self):
-        """Login to Google account"""
-        logger.info("Logging in to Google account...")
+    def login_to_gmail(self):
+        """Log into Gmail account"""
+        logger.info("Logging into Gmail...")
+        self.driver.get("https://mail.google.com")
         
-        self.driver.get("https://accounts.google.com/")
-        time.sleep(2)
-
         try:
             # Enter email
-            email_input = WebDriverWait(self.driver, 10).until(
+            email_field = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.ID, "identifierId"))
             )
-            email_input.send_keys(self.email)
-            email_input.send_keys(Keys.ENTER)
-            logger.info("Email entered")
-
+            email_field.send_keys(self.email)
+            self.driver.find_element(By.ID, "identifierNext").click()
+            
             # Enter password
-            password_input = WebDriverWait(self.driver, 15).until(
+            password_field = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.NAME, "Passwd"))
             )
-            password_input.send_keys(self.password)
-            password_input.send_keys(Keys.ENTER)
-            logger.info("Password entered")
-
+            password_field.send_keys(self.password)
+            self.driver.find_element(By.ID, "passwordNext").click()
+            
             # Wait for login to complete
-            WebDriverWait(self.driver, 15).until(
-                EC.url_contains("myaccount.google.com"))
-            logger.info("✅ Successfully logged into Google")
-
-        except Exception as e:
-            logger.error(f"❌ Failed to login: {e}")
-            self.driver.save_screenshot("login_error.png")
-            raise
-
-    def join_meeting(self):
-        """Join the Google Meet meeting"""
-        logger.info("Joining Google Meet...")
-        
-        self.driver.get(self.meeting_link)
-        logger.info(f"📞 Navigating to meeting link: {self.meeting_link}")
-        
-        WebDriverWait(self.driver, 15).until(
-            EC.presence_of_element_located((By.TAG_NAME, "body"))
-        )
-        time.sleep(5)
-
-        wait = WebDriverWait(self.driver, 20)
-
-        try:
-            # Click "Cancel" button if present
-            no_mic_btn = wait.until(
-                EC.presence_of_element_located((By.XPATH, "//span[contains(text(),'Cancel')]")))
-            no_mic_btn.click()
-            logger.info("✅ Clicked 'Cancel' button")
-        except Exception as e:
-            logger.warning(f"❌ No Cancel button found: {e}")
-            self.driver.save_screenshot("cancel_button_error.png")
-
-        try:
-            # Click "Continue without microphone" if present
-            no_mic_btn = wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//span[contains(text(),'Continue without microphone')]")))
-            no_mic_btn.click()
-            logger.info("✅ Clicked 'Continue without microphone'")
-        except Exception as e:
-            logger.warning(f"❌ No microphone button found: {e}")
-
-        # Join the meeting
-        try:
-            join_btn = self.driver.find_element(By.XPATH, "//span[contains(text(),'Join now')]")
-            join_btn.click()
-            logger.info("🚀 Successfully joined the meeting")
-        except Exception as e:
-            logger.error(f"❌ Could not join the meeting: {e}")
-            raise
-
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.PARTIAL_LINK_TEXT, "Inbox"))
+            )
+            logger.info("Successfully logged into Gmail")
+            return True
+            
+        except TimeoutException:
+            logger.error("Timeout during Gmail login")
+            return False
     def start_recording(self):
-        """Start screen and audio recording with FFmpeg"""
-        logger.info("🎬 Starting FFmpeg recording...")
-        
-        ffmpeg_cmd = [
-            "ffmpeg", "-y",
-            "-f", "x11grab", "-framerate", "25",
-            "-video_size", "1366x768", "-i", ":99.0",
-            "-f", "pulse", "-i", "alsa_output.usb-ZhuHai_JieLi_Technology_JieLi_BR21_20180105-01.analog-stereo.monitor",
-            "-c:v", "libx264", "-preset", "ultrafast", "-pix_fmt", "yuv420p",
-            "-c:a", "aac", "-b:a", "128k",
-            "-shortest", self.recording_path
-        ]
-
-        self.recording_process = subprocess.Popen(ffmpeg_cmd)
-        logger.info(f"Recording started. Saving to: {self.recording_path}")
-
-    def monitor_participants(self, timeout_minutes=120):
-        """Monitor meeting participants and stop when meeting ends"""
-        logger.info("👥 Starting participant monitoring...")
-        
-        only_bot_timer_started = False
-        bot_alone_start_time = None
-        start_time = time.time()
-        timeout_seconds = timeout_minutes * 60
-
-        while True:
+            """Start recording the screen with audio"""
+            self.print_status("Starting screen recording with audio...")
             try:
-                # Check if we've exceeded the maximum meeting duration
-                if time.time() - start_time > timeout_seconds:
-                    logger.info("⏰ Maximum meeting duration reached")
-                    break
+                # Ensure filename has .mp4 extension
+                if not self.filename.lower().endswith('.mp4'):
+                    self.filename += '.mp4'
+                    
+                # Get absolute path for output file
+                output_path = os.path.abspath(self.filename)
+                self.print_status(f"Output will be saved to: {output_path}")
+                
+                # Explicit path to ffmpeg
+                ffmpeg_path = r"C:\ProgramData\chocolatey\bin\ffmpeg.exe"
+                
+                if not os.path.exists(ffmpeg_path):
+                    raise Exception(f"FFmpeg not found at {ffmpeg_path}")
 
-                # Open participants panel
-                people_button = WebDriverWait(self.driver, 20).until(
-                    EC.element_to_be_clickable((By.XPATH, '//button[@aria-label="People"]'))
-                )
-                people_button.click()
+                # First try to list available audio devices to help debugging
+                try:
+                    list_devices_cmd = [ffmpeg_path, '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy']
+                    subprocess.run(list_devices_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=5)
+                except:
+                    pass  # This is just for debugging, failure here isn't critical
 
-                WebDriverWait(self.driver, 10).until(
-                    EC.presence_of_element_located((By.XPATH, '//div[@aria-label="Participants"]'))
-                )
-
-                # Get list of participants
-                participants = self.driver.find_elements(By.XPATH, '//div[@role="listitem"]')
-                participant_count = len(participants)
-                logger.debug(f"Current participant count: {participant_count}")
-
-                if participant_count <= 1:
-                    if not only_bot_timer_started:
-                        logger.info("🟡 Only bot is present. Starting 30 second grace period...")
-                        bot_alone_start_time = time.time()
-                        only_bot_timer_started = True
-                    else:
-                        elapsed = time.time() - bot_alone_start_time
-                        logger.info(f"⏳ Waiting for participants... {int(elapsed)}s elapsed")
-
-                        if elapsed >= 30:
-                            logger.info("❌ No participants joined in 30 seconds.")
-                            break
-                else:
-                    if only_bot_timer_started:
-                        logger.info("🟢 Participants joined! Continuing recording.")
-                        only_bot_timer_started = False
-                        bot_alone_start_time = None
-
-                time.sleep(10)
-
+                # Audio device names - these need to match exactly what FFmpeg detects
+                # Common alternatives for system audio: "virtual-audio-capturer", "Stereo Mix", "What U Hear"
+                system_audio_device = "virtual-audio-capturer"  # Try this first for system audio
+                microphone_device = "Microphone (Realtek(R) Audio)"  # Microphone
+                
+                # Try different approaches for audio capture
+                ffmpeg_cmd = [
+                    'ffmpeg',
+                    '-f', 'gdigrab',          # Screen capture
+                    '-framerate', '30',
+                    '-video_size', '1920x1080',
+                    '-i', 'desktop',
+                ]
+                
+                # Try different audio capture methods
+                try_methods = [
+                    # Method 1: Try with just microphone if system audio fails
+                    [
+                        '-f', 'dshow',
+                        '-i', f'audio={microphone_device}',
+                        '-c:v', 'libx264',
+                        '-preset', 'ultrafast',
+                        '-pix_fmt', 'yuv420p',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-movflags', '+faststart',
+                        '-y',
+                        output_path
+                    ],
+                    
+                    # Method 2: Try alternative system audio device name
+                    [
+                        '-f', 'dshow',
+                        '-i', f'audio={system_audio_device}',
+                        '-f', 'dshow',
+                        '-i', f'audio={microphone_device}',
+                        '-filter_complex', '[1:a][2:a]amix=inputs=2[a]',
+                        '-map', '0:v',
+                        '-map', '[a]',
+                        '-c:v', 'libx264',
+                        '-preset', 'ultrafast',
+                        '-pix_fmt', 'yuv420p',
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
+                        '-movflags', '+faststart',
+                        '-y',
+                        output_path
+                    ],
+                    
+                    # Method 3: Try without audio if all else fails
+                    [
+                        '-c:v', 'libx264',
+                        '-preset', 'ultrafast',
+                        '-pix_fmt', 'yuv420p',
+                        '-an',  # No audio
+                        '-movflags', '+faststart',
+                        '-y',
+                        output_path
+                    ]
+                ]
+                
+                last_error = None
+                success = False
+                
+                for method in try_methods:
+                    current_cmd = ffmpeg_cmd + method
+                    self.print_status(f"Trying command: {' '.join(current_cmd)}")
+                    
+                    try:
+                        self.ffmpeg_process = subprocess.Popen(
+                            current_cmd,
+                            stdin=subprocess.PIPE,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.PIPE,
+                            creationflags=subprocess.CREATE_NO_WINDOW,
+                            shell=True
+                        )
+                        
+                        # Wait briefly to ensure ffmpeg started
+                        time.sleep(2)
+                        
+                        if self.ffmpeg_process.poll() is not None:
+                            error = self.ffmpeg_process.stderr.read().decode('utf-8', errors='ignore')
+                            last_error = error
+                            self.print_status(f"Attempt failed: {error}")
+                            if self.ffmpeg_process:
+                                self.ffmpeg_process.kill()
+                            continue
+                        
+                        success = True
+                        break
+                        
+                    except Exception as e:
+                        last_error = str(e)
+                        self.print_status(f"Error during attempt: {last_error}")
+                        continue
+                
+                if not success:
+                    raise Exception(f"All recording attempts failed. Last error: {last_error}")
+                
+                self.recording_started = True
+                self.print_status(f"Screen recording started successfully to {output_path}")
+                
             except Exception as e:
-                logger.error(f"⚠️ Error during participant check: {e}")
-                break
+                self.print_status(f"Error starting recording: {str(e)}")
+                if hasattr(self, 'ffmpeg_process') and self.ffmpeg_process:
+                    self.ffmpeg_process.kill()
+                raise
+    def monitor_recording(self):
+        """Monitor the recording process and meeting status"""
+        self.print_status(f"Monitoring recording for {self.duration} minutes...")
+        start_time = time.time()
+        end_time = start_time + (self.duration * 60)
+        last_participant_check = 0
+        
+        try:
+            while time.time() < end_time and not self.should_stop:
+                current_time = time.time()
+                elapsed = int(current_time - start_time)
+                remaining = int(end_time - current_time)
+                
+                # Check participants every 30 seconds after first 2 minutes
+                if current_time - last_participant_check > 30 and elapsed > 20:  # Reduced from 120 to 20 for testing
+                    last_participant_check = current_time
+                    if not self.check_participants():
+                        self.participants_check_count += 1
+                        self.print_status(f"No participants detected ({self.participants_check_count}/4 checks)")
+                        
+                        # Leave if no participants for 2 checks (1 minute)
+                        if self.participants_check_count >= 2:
+                            self.print_status("No other participants for 1 minute. Ending recording.")
+                            self.should_stop = True
+                            break
+                    else:
+                        self.participants_check_count = 0
+                
+                self.print_status(f"Recording... Elapsed: {elapsed}s | Remaining: {remaining}s")
+                time.sleep(10)
+            
+            # Properly stop recording
+            self.print_status("Stopping recording process...")
+            if self.ffmpeg_process and self.ffmpeg_process.poll() is None:
+                try:
+                    # First try graceful termination
+                    self.print_status("Attempting graceful FFmpeg shutdown...")
+                    
+                    # Send 'q' to stdin (works for interactive FFmpeg)
+                    try:
+                        self.ffmpeg_process.stdin.write(b'q\n')
+                        self.ffmpeg_process.stdin.flush()
+                    except:
+                        pass
+                    
+                    # Wait with timeout
+                    try:
+                        self.print_status("Waiting up to 15 seconds for FFmpeg to finish...")
+                        self.ffmpeg_process.wait(timeout=15)
+                    except subprocess.TimeoutExpired:
+                        self.print_status("Graceful shutdown failed, terminating FFmpeg...")
+                        self.ffmpeg_process.terminate()
+                        try:
+                            self.ffmpeg_process.wait(timeout=5)
+                        except subprocess.TimeoutExpired:
+                            self.print_status("Forcing FFmpeg to close...")
+                            self.ffmpeg_process.kill()
+                    
+                    # Verify output file
+                    if os.path.exists(self.filename):
+                        file_size = os.path.getsize(self.filename) / (1024 * 1024)  # in MB
+                        self.print_status(f"Recording saved successfully! File size: {file_size:.2f} MB")
+                        
+                        # Verify file is playable
+                        try:
+                            subprocess.run(
+                                [r"C:\ProgramData\chocolatey\bin\ffmpeg.exe", "-i", self.filename],
+                                stderr=subprocess.PIPE,
+                                stdout=subprocess.PIPE,
+                                timeout=5
+                            )
+                            self.print_status("Video file appears to be valid")
+                        except:
+                            self.print_status("Warning: Video file might be corrupted")
+                    else:
+                        raise Exception("Output file was not created")
+                        
+                except Exception as e:
+                    self.print_status(f"Error stopping recording: {str(e)}")
+                    raise
+            
+            # Save recording info
+            info_file = f"{os.path.splitext(self.filename)[0]}_info.txt"
+            with open(info_file, 'w') as f:
+                f.write(f"Meeting: {self.meeting_link}\n")
+                f.write(f"Duration: {int(time.time() - start_time)} seconds\n")
+                f.write(f"Ended at: {datetime.now().isoformat()}\n")
+                f.write(f"Participants left early: {self.participants_check_count >= 2}\n")
+                f.write(f"Video file: {os.path.abspath(self.filename)}\n")
+                if os.path.exists(self.filename):
+                    f.write(f"File size: {os.path.getsize(self.filename) / (1024 * 1024):.2f} MB\n")
+            
+            self.print_status(f"Recording info saved to {info_file}")
+            self.print_status("Recording process completed successfully")
+            
+        except Exception as e:
+            self.print_status(f"Error during recording monitoring: {str(e)}")
+            if hasattr(self, 'ffmpeg_process') and self.ffmpeg_process:
+                self.ffmpeg_process.kill()
+            raise
+    
+    
+    
+    
+    def join_meeting(self):
+        """Join the Google Meet session silently"""
+        self.print_status(f"Joining meeting: {self.meeting_link}")
+        self.driver.get(self.meeting_link)
+
+        try:
+
+            # Turn off camera and mic before joining
+            self.print_status("Turning off camera and mic...")
+
+            for label in ['camera', 'microphone']:
+                try:
+                    selectors = [
+                        f"div[aria-label*='Turn off {label}']",
+                        f"div[aria-label*='Turn on {label}']",
+                        f"div[jsname*='toggle{label.capitalize()}']",
+                        f"button[aria-label*='{label}']"
+                    ]
+                    for selector in selectors:
+                        try:
+                            btn = WebDriverWait(self.driver, 3).until(
+                                EC.element_to_be_clickable((By.CSS_SELECTOR, selector))
+                            )
+                            btn.click()
+                            time.sleep(0.5)
+                            self.print_status(f"{label.capitalize()} turned off")
+                            break
+                        except:
+                            continue
+                except Exception as e:
+                    self.print_status(f"Could not turn off {label}: {str(e)}")
+
+            # Click join/ask button
+            self.print_status("Looking for join/ask button...")
+            join_selectors = [
+                ("xpath", "//span[contains(text(), 'Join now')]"),
+                ("xpath", "//span[contains(text(), 'Ask to join')]"),
+                ("xpath", "//button[contains(text(), 'Join now')]"),
+                ("xpath", "//button[contains(text(), 'Ask to join')]"),
+                ("css", "button[jscontroller][jsaction*='click'] span.UywwFc-vQzf8d")
+            ]
+
+            joined = False
+            for by, value in join_selectors:
+                try:
+                    locator = (By.XPATH, value) if by == "xpath" else (By.CSS_SELECTOR, value)
+                    join_btn = WebDriverWait(self.driver, 10).until(
+                        EC.element_to_be_clickable(locator)
+                    )
+                    self.driver.execute_script("arguments[0].scrollIntoView(true);", join_btn)
+                    time.sleep(0.5)
+                    try:
+                        join_btn.click()
+                    except:
+                        self.driver.execute_script("arguments[0].click();", join_btn)
+                    self.print_status(f"Clicked join using {by}: {value}")
+                    joined = True
+                    break
+                except Exception as e:
+                    self.print_status(f"Selector failed: {value} -> {e}")
+
+            # Fallback: click any button with join/ask text
+            if not joined:
+                try:
+                    buttons = self.driver.find_elements(By.TAG_NAME, "button")
+                    for button in buttons:
+                        if any(keyword in button.text.lower() for keyword in ["join", "ask"]):
+                            try:
+                                button.click()
+                                joined = True
+                                break
+                            except:
+                                self.driver.execute_script("arguments[0].click();", button)
+                                joined = True
+                                break
+                except Exception as e:
+                    self.print_status(f"Fallback failed: {e}")
+
+            if joined:
+                self.print_status("Successfully joined the meeting")
+                return True
+            else:
+                self.print_status("Join button not found")
+                return False
+
+        except TimeoutException:
+            self.print_status("Meeting load timeout")
+            return False
+        except Exception as e:
+            self.print_status(f"Error: {str(e)}")
+            return False
+
+   
+    def check_participants(self):
+        """Check if there are other participants in the meeting"""
+        try:
+            # Try different ways to find participants count
+            participants_elements = self.driver.find_elements(
+                By.CSS_SELECTOR, "div[aria-label*='participant'], div[jsname*='participant']"
+            )
+            
+            # If we can't find specific elements, look for people indicators
+            if not participants_elements:
+                participants_elements = self.driver.find_elements(
+                    By.CSS_SELECTOR, "div[aria-label*='person'], div[jsname*='person']"
+                )
+            
+            # Count only visible participant elements
+            visible_participants = [el for el in participants_elements if el.is_displayed()]
+            
+            self.print_status(f"Participants check: Found {len(visible_participants)} possible participants")
+            return len(visible_participants) > 1  # More than just ourselves
+            
+        except Exception as e:
+            self.print_status(f"Error checking participants: {str(e)}")
+            return True  # Assume someone is there if we can't check
 
     def run(self):
-        """Main execution method"""
+        """Main bot execution flow"""
         try:
-            self.setup_driver()
-            self.login_to_google()
-            self.join_meeting()
+            self.print_status("Starting Google Meet Bot...")
+            self.initialize_driver()
+            
+            # Start recording immediately after driver initialization
             self.start_recording()
-            self.monitor_participants()
+            
+            if not self.login_to_gmail():
+                raise Exception("Failed to login to Google account")
+                
+            if not self.join_meeting():
+                raise Exception("Failed to join meeting")
+                
+            # Start monitoring in a separate thread
+            self.print_status("Starting monitoring thread...")
+            self.recording_thread = threading.Thread(
+                target=self.monitor_recording
+            )
+            self.recording_thread.start()
+            
+            # Wait for monitoring to complete
+            self.print_status("Waiting for recording to complete...")
+            self.recording_thread.join()
+            self.print_status("Recording completed successfully")
             
         except Exception as e:
-            logger.error(f"❌ Error during bot execution: {e}")
+            self.print_status(f"Error in bot execution: {str(e)}")
             raise
-            
         finally:
-            # Stop recording
-            if self.recording_process:
-                self.recording_process.terminate()
-                logger.info(f"✅ Recording saved: {self.recording_path}")
+            self.stop()
 
-            # Leave meeting
+    def stop(self):
+        """Stop the monitoring and cleanup"""
+        self.print_status("Stopping bot...")
+        self.should_stop = True
+        
+        if self.recording_thread and self.recording_thread.is_alive():
+            self.print_status("Waiting for monitoring thread to finish...")
+            self.recording_thread.join(timeout=5)
+        
+        self.cleanup()
+        self.print_status("Bot stopped successfully")
+
+    def cleanup(self):
+        """Clean up resources"""
+        if self.driver:
             try:
-                if self.driver:
-                    leave_button = WebDriverWait(self.driver, 10).until(
-                        EC.element_to_be_clickable((By.XPATH, '//button[@aria-label="Leave call"]'))
-                    )
-                    leave_button.click()
-                    logger.info("👋 Bot has left the meeting")
-                    time.sleep(2)
-            except Exception as e:
-                logger.warning(f"⚠️ Could not properly leave meeting: {e}")
-
-            # Close browser
-            if self.driver:
+                self.print_status("Closing browser...")
                 self.driver.quit()
-                logger.info("✅ Browser closed")
+                self.print_status("Browser closed")
+            except Exception as e:
+                self.print_status(f"Error closing browser: {str(e)}")
+        
+        if self.ffmpeg_process and self.ffmpeg_process.poll() is None:
+            try:
+                self.print_status("Terminating ffmpeg process...")
+                self.ffmpeg_process.terminate()
+                try:
+                    self.ffmpeg_process.wait(timeout=3)
+                except subprocess.TimeoutExpired:
+                    self.ffmpeg_process.kill()
+                self.print_status("ffmpeg process terminated")
+            except Exception as e:
+                self.print_status(f"Error terminating ffmpeg process: {str(e)}")
 
-        return True

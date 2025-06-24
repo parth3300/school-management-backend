@@ -82,13 +82,14 @@ EMAIL_HOST_PASSWORD = os.environ.get('EMAIL_PASS')
 EMAIL_USE_TLS = True
 
 # Google Meet Bot Credentials
-MEET_BOT_EMAIL = EMAIL_HOST_USER
-MEET_BOT_PASSWORD = EMAIL_HOST_PASSWORD
+MEET_BOT_EMAIL = os.environ.get('MEET_BOT_EMAIL')
+MEET_BOT_PASSWORD = os.environ.get('MEET_BOT_PASSWORD')
 
 # Recording settings
 RECORDINGS_DIR = "/tmp/recordings"
 os.makedirs(RECORDINGS_DIR, exist_ok=True)
-
+GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
+GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
@@ -246,8 +247,8 @@ DJOSER = {
     'PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND': True,
     'TOKEN_MODEL': None,       # To Delete User Must Set it to None
     'SERIALIZERS':{
+        'user': 'school_user.serializers.CustomUserDetailSerializer',  # 👈 here
         'user_create': 'school_user.serializers.CustomUserCreateSerializer',
-        'user': 'school_user.serializers.CustomUserCreateSerializer',
         'user_delete': 'djoser.serializers.UserDeleteSerializer',
         'token_create': 'school_user.serializers.CustomTokenCreateSerializer',
 
