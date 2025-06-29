@@ -10,8 +10,10 @@ This solution combines:
 # Standard library imports
 import os
 import time
+import tempfile
 import subprocess
 import logging
+import random
 import threading
 from datetime import datetime
 
@@ -34,6 +36,9 @@ from selenium.common.exceptions import TimeoutException, NoSuchElementException
 
 # Set up logging
 logger = logging.getLogger(__name__)
+def generate_unique_profile_path():
+    """Generate a unique temporary directory for Chrome profile"""
+    return tempfile.mkdtemp(prefix=f"chrome_profile_{int(time.time())}_{random.randint(1000, 9999)}_")
 
 class MeetBot:
     """Google Meet recording bot using Selenium"""
@@ -57,23 +62,41 @@ class MeetBot:
         print(f"[BOT STATUS] {message}")
 
     def initialize_driver(self):
-        """Initialize Chrome WebDriver with options"""
+        """Initialize Chrome WebDriver with proper options for local and live"""
         options = webdriver.ChromeOptions()
-        
+
+        # Headless browser if needed
         if self.headless:
             options.add_argument("--headless=new")
-        
+
+        # Disable popups and permissions
         options.add_argument("--disable-notifications")
         options.add_argument("--use-fake-ui-for-media-stream")
         options.add_argument("--use-fake-device-for-media-stream")
+
+        # Prevent Selenium detection
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
-        options.add_experimental_option('useAutomationExtension', False)
-        
-        # For recording capabilities
+        options.add_experimental_option("useAutomationExtension", False)
+
+        # For screen sharing simulation
         options.add_argument("--auto-select-desktop-capture-source=Entire screen")
-        
+
+        # ✅ Avoid "user-data-dir already in use" error
+        user_data_dir = generate_unique_profile_path()
+        options.add_argument(f"--user-data-dir={user_data_dir}")
+
+        # Optional: Disable GPU for headless servers
+        options.add_argument("--disable-gpu")
+
+        # Optional: Set no-sandbox for CI/CD or restricted environments
+        options.add_argument("--no-sandbox")
+
+        # Start the driver
         self.driver = webdriver.Chrome(options=options)
-        self.driver.maximize_window()
+
+        # Maximize only if not headless (some systems don’t support maximize in headless mode)
+        if not self.headless:
+            self.driver.maximize_window()
 
     def login_to_gmail(self):
         """Log into Gmail account"""
@@ -81,13 +104,19 @@ class MeetBot:
         self.driver.get("https://mail.google.com")
         
         try:
+            sign_in_button = WebDriverWait(self.driver, 5).until(
+                EC.element_to_be_clickable((By.LINK_TEXT, "Sign in"))
+            )
+            sign_in_button.click()
+            logger.info("Clicked on 'Sign in' from Workspace landing page")
             # Enter email
             email_field = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.ID, "identifierId"))
             )
             email_field.send_keys(self.email)
             self.driver.find_element(By.ID, "identifierNext").click()
-            
+            time.sleep(2)  # give time for transition
+
             # Enter password
             password_field = WebDriverWait(self.driver, 20).until(
                 EC.presence_of_element_located((By.NAME, "Passwd"))
@@ -105,67 +134,60 @@ class MeetBot:
         except TimeoutException:
             logger.error("Timeout during Gmail login")
             return False
+    
     def start_recording(self):
-            """Start recording the screen with audio"""
-            self.print_status("Starting screen recording with audio...")
-            try:
-                # Ensure filename has .mp4 extension
-                if not self.filename.lower().endswith('.mp4'):
-                    self.filename += '.mp4'
-                    
-                # Get absolute path for output file
-                output_path = os.path.abspath(self.filename)
-                self.print_status(f"Output will be saved to: {output_path}")
+        """Start recording the screen with audio"""
+        self.print_status("Starting screen recording with audio...")
+        try:
+            # Ensure filename has .mp4 extension
+            if not self.filename.lower().endswith('.mp4'):
+                self.filename += '.mp4'
                 
-                # Explicit path to ffmpeg
-                ffmpeg_path = r"C:\ProgramData\chocolatey\bin\ffmpeg.exe"
-                
-                if not os.path.exists(ffmpeg_path):
-                    raise Exception(f"FFmpeg not found at {ffmpeg_path}")
-
-                # First try to list available audio devices to help debugging
+            # Get absolute path for output file
+            output_path = os.path.abspath(self.filename)
+            self.print_status(f"Output will be saved to: {output_path}")
+            
+            # First, try to detect available audio devices
+            def get_audio_devices():
                 try:
-                    list_devices_cmd = [ffmpeg_path, '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy']
-                    subprocess.run(list_devices_cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE, timeout=5)
+                    ffmpeg_path = 'ffmpeg'  # Assuming it's in PATH
+                    result = subprocess.run(
+                        [ffmpeg_path, '-list_devices', 'true', '-f', 'dshow', '-i', 'dummy'],
+                        stderr=subprocess.PIPE, stdout=subprocess.PIPE, text=True
+                    )
+                    output = result.stderr
+                    audio_devices = []
+                    for line in output.split('\n'):
+                        if 'audio' in line.lower() and 'dshow' in line.lower():
+                            device = line.split('"')[1]
+                            audio_devices.append(device)
+                    return audio_devices
                 except:
-                    pass  # This is just for debugging, failure here isn't critical
+                    return []
 
-                # Audio device names - these need to match exactly what FFmpeg detects
-                # Common alternatives for system audio: "virtual-audio-capturer", "Stereo Mix", "What U Hear"
-                system_audio_device = "virtual-audio-capturer"  # Try this first for system audio
-                microphone_device = "Microphone (Realtek(R) Audio)"  # Microphone
-                
-                # Try different approaches for audio capture
-                ffmpeg_cmd = [
-                    'ffmpeg',
-                    '-f', 'gdigrab',          # Screen capture
-                    '-framerate', '30',
-                    '-video_size', '1920x1080',
-                    '-i', 'desktop',
-                ]
-                
-                # Try different audio capture methods
-                try_methods = [
-                    # Method 1: Try with just microphone if system audio fails
-                    [
+            available_devices = get_audio_devices()
+            self.print_status(f"Available audio devices: {available_devices}")
+
+            # Screen capture command base
+            ffmpeg_cmd = [
+                'ffmpeg',
+                '-f', 'gdigrab',
+                '-framerate', '30',
+                '-video_size', '1920x1080',
+                '-i', 'desktop',
+            ]
+
+            # Try different recording methods in order of preference
+            try_methods = []
+
+            # Method 1: Try with both system audio and microphone if available
+            if len(available_devices) >= 2:
+                try_methods.append(
+                    ffmpeg_cmd + [
                         '-f', 'dshow',
-                        '-i', f'audio={microphone_device}',
-                        '-c:v', 'libx264',
-                        '-preset', 'ultrafast',
-                        '-pix_fmt', 'yuv420p',
-                        '-c:a', 'aac',
-                        '-b:a', '192k',
-                        '-movflags', '+faststart',
-                        '-y',
-                        output_path
-                    ],
-                    
-                    # Method 2: Try alternative system audio device name
-                    [
+                        '-i', f'audio={available_devices[0]}',
                         '-f', 'dshow',
-                        '-i', f'audio={system_audio_device}',
-                        '-f', 'dshow',
-                        '-i', f'audio={microphone_device}',
+                        '-i', f'audio={available_devices[1]}',
                         '-filter_complex', '[1:a][2:a]amix=inputs=2[a]',
                         '-map', '0:v',
                         '-map', '[a]',
@@ -177,67 +199,87 @@ class MeetBot:
                         '-movflags', '+faststart',
                         '-y',
                         output_path
-                    ],
-                    
-                    # Method 3: Try without audio if all else fails
-                    [
+                    ]
+                )
+
+            # Method 2: Try with just one audio device if available
+            if available_devices:
+                try_methods.append(
+                    ffmpeg_cmd + [
+                        '-f', 'dshow',
+                        '-i', f'audio={available_devices[0]}',
                         '-c:v', 'libx264',
                         '-preset', 'ultrafast',
                         '-pix_fmt', 'yuv420p',
-                        '-an',  # No audio
+                        '-c:a', 'aac',
+                        '-b:a', '192k',
                         '-movflags', '+faststart',
                         '-y',
                         output_path
                     ]
+                )
+
+            # Method 3: Fallback to video only
+            try_methods.append(
+                ffmpeg_cmd + [
+                    '-c:v', 'libx264',
+                    '-preset', 'ultrafast',
+                    '-pix_fmt', 'yuv420p',
+                    '-an',  # No audio
+                    '-movflags', '+faststart',
+                    '-y',
+                    output_path
                 ]
+            )
+
+            last_error = None
+            success = False
+            
+            for method in try_methods:
+                self.print_status(f"Trying command: {' '.join(method)}")
                 
-                last_error = None
-                success = False
-                
-                for method in try_methods:
-                    current_cmd = ffmpeg_cmd + method
-                    self.print_status(f"Trying command: {' '.join(current_cmd)}")
+                try:
+                    self.ffmpeg_process = subprocess.Popen(
+                        method,
+                        stdin=subprocess.PIPE,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        creationflags=subprocess.CREATE_NO_WINDOW,
+                        shell=True
+                    )
                     
-                    try:
-                        self.ffmpeg_process = subprocess.Popen(
-                            current_cmd,
-                            stdin=subprocess.PIPE,
-                            stdout=subprocess.PIPE,
-                            stderr=subprocess.PIPE,
-                            creationflags=subprocess.CREATE_NO_WINDOW,
-                            shell=True
-                        )
-                        
-                        # Wait briefly to ensure ffmpeg started
-                        time.sleep(2)
-                        
-                        if self.ffmpeg_process.poll() is not None:
-                            error = self.ffmpeg_process.stderr.read().decode('utf-8', errors='ignore')
-                            last_error = error
-                            self.print_status(f"Attempt failed: {error}")
-                            if self.ffmpeg_process:
-                                self.ffmpeg_process.kill()
-                            continue
-                        
-                        success = True
-                        break
-                        
-                    except Exception as e:
-                        last_error = str(e)
-                        self.print_status(f"Error during attempt: {last_error}")
+                    # Wait briefly to ensure ffmpeg started
+                    time.sleep(2)
+                    
+                    if self.ffmpeg_process.poll() is not None:
+                        error = self.ffmpeg_process.stderr.read().decode('utf-8', errors='ignore')
+                        last_error = error
+                        self.print_status(f"Attempt failed: {error}")
+                        if self.ffmpeg_process:
+                            self.ffmpeg_process.kill()
                         continue
-                
-                if not success:
-                    raise Exception(f"All recording attempts failed. Last error: {last_error}")
-                
-                self.recording_started = True
-                self.print_status(f"Screen recording started successfully to {output_path}")
-                
-            except Exception as e:
-                self.print_status(f"Error starting recording: {str(e)}")
-                if hasattr(self, 'ffmpeg_process') and self.ffmpeg_process:
-                    self.ffmpeg_process.kill()
-                raise
+                    
+                    success = True
+                    break
+                    
+                except Exception as e:
+                    last_error = str(e)
+                    self.print_status(f"Error during attempt: {last_error}")
+                    continue
+            
+            if not success:
+                raise Exception(f"All recording attempts failed. Last error: {last_error}")
+            
+            self.recording_started = True
+            self.print_status(f"Screen recording started successfully to {output_path}")
+            
+        except Exception as e:
+            self.print_status(f"Error starting recording: {str(e)}")
+            if hasattr(self, 'ffmpeg_process') and self.ffmpeg_process:
+                self.ffmpeg_process.kill()
+            raise
+    
+    
     def monitor_recording(self):
         """Monitor the recording process and meeting status"""
         self.print_status(f"Monitoring recording for {self.duration} minutes...")
