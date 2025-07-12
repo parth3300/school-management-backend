@@ -6,6 +6,7 @@ from datetime import datetime, timedelta
 import threading
 import logging
 import time
+import random
 
 # Django imports
 from django.conf import settings
@@ -51,8 +52,11 @@ def meeting_bot_view(request):
 
     # Ensure recording directory exists
     os.makedirs(recording_dir, exist_ok=True)
-    filename = os.path.join(recording_dir, data['filename'])
 
+    # Correct way to format the string in Python (not using ${} like JavaScript)
+    filename = f"reco{random.randint(1, 1000)}"  # or math.floor(random.random() * 1000) + 1
+    print("New filename is .....", filename)
+    filename = os.path.join(recording_dir,filename)
     logger.info(f"Starting meeting bot for meeting: {data['meeting_link']}")
 
     try:
@@ -87,6 +91,7 @@ def meeting_bot_view(request):
         thread = threading.Thread(target=run_bot)
         thread.daemon = True
         thread.start()
+        thread.join()  # Waits for the thread to finish
 
         return Response(
             {

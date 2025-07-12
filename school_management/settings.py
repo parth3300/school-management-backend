@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 import os
+import cloudinary
 from datetime import timedelta
 from dotenv import load_dotenv
 load_dotenv()
@@ -22,9 +23,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-dj)_5z78&g3e_-2-wujc@w&lwb1!%itconoar-2n5+tyc1npgk'
+SECRET_KEY = os.environ.get('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
@@ -47,11 +47,9 @@ INSTALLED_APPS = [
     'djoser',
     "corsheaders",
     "bot"
-
-
 ]
 
-DATABASE_URL = "postgresql://postgres.hrlgfhcbdddebdeusbdi:eE6qcrG9q_nqaNU@aws-0-ap-southeast-1.pooler.supabase.com:6543/postgres"
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 DATABASES = {
     'default': {
@@ -90,6 +88,7 @@ RECORDINGS_DIR = "/tmp/recordings"
 os.makedirs(RECORDINGS_DIR, exist_ok=True)
 GOOGLE_CLIENT_SECRET = os.environ.get('GOOGLE_CLIENT_SECRET')
 GOOGLE_CLIENT_ID = os.environ.get('GOOGLE_CLIENT_ID')
+
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     'django.middleware.security.SecurityMiddleware',
@@ -110,6 +109,7 @@ TEMPLATES = [
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
         'DIRS': [
             BASE_DIR / 'school_user' / 'templates',
+            BASE_DIR / 'bot' / 'templates',
         ],
         'APP_DIRS': True,
         'OPTIONS': {
@@ -166,11 +166,14 @@ USE_TZ = True
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-import cloudinary
+CLOUD_NAME = os.environ.get('CLOUD_NAME')
+CLOUDINARY_API_KEY = os.environ.get('CLOUDINARY_API_KEY')
+CLOUDINARY_API_SECRET = os.environ.get('CLOUDINARY_API_SECRET')
+
 cloudinary.config( 
-  cloud_name = 'dal18b6wk',       # Replace with your cloud name
-  api_key = '294982374822612',             # Replace with your API key
-  api_secret = 'rQymIHFfvQ6-Cx36ZVh_NDvsf28'        # Replace with your API secret
+  cloud_name = CLOUD_NAME,
+  api_key = CLOUDINARY_API_KEY,
+  api_secret = CLOUDINARY_API_SECRET
 )
 
 # ✅ STATIC & MEDIA
@@ -178,13 +181,14 @@ STATIC_URL = '/static/'
 
 STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
+
 # ✅ Cloudinary media storage
-DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
+DEFAULT_FILE_STORAGE = os.environ.get('DEFAULT_FILE_STORAGE')
 
 CLOUDINARY_STORAGE = {
-    'CLOUD_NAME': 'dal18b6wk',
-    'API_KEY': '294982374822612',
-    'API_SECRET': 'rQymIHFfvQ6-Cx36ZVh_NDvsf28',  # Replace with real secret
+    'CLOUD_NAME':  CLOUD_NAME,
+    'API_KEY':  CLOUDINARY_API_KEY,
+    'API_SECRET':  CLOUDINARY_API_SECRET
 }
 
 

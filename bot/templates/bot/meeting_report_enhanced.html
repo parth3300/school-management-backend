@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Meeting Report: {{ meeting_title }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 20px; }
+        h1 { color: #2c3e50; border-bottom: 2px solid #3498db; padding-bottom: 10px; }
+        .section { margin-bottom: 30px; border: 1px solid #eee; padding: 15px; border-radius: 5px; }
+        .subsection { margin-left: 20px; margin-bottom: 15px; }
+        .timestamp { color: #7f8c8d; font-size: 0.9em; }
+        .speaker { color: #e74c3c; font-weight: bold; }
+        .person { color: #9b59b6; font-weight: bold; }
+        .emotion { display: inline-block; padding: 2px 5px; border-radius: 3px; }
+        .happy { background-color: #2ecc71; color: white; }
+        .neutral { background-color: #f39c12; color: white; }
+        .sad { background-color: #3498db; color: white; }
+        .angry { background-color: #e74c3c; color: white; }
+        .chart { margin: 20px 0; text-align: center; }
+        img { max-width: 100%; height: auto; }
+        .meeting-info { background-color: #f8f9fa; padding: 15px; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <h1>Meeting Report: {{ meeting_title }}</h1>
+    
+    <div class="meeting-info">
+        <p><strong>Date:</strong> {{ date }}</p>
+        <p><strong>Duration:</strong> {{ duration }}</p>
+        <p><strong>Meeting Link:</strong> <a href="{{ meeting_link }}" target="_blank">{{ meeting_link }}</a></p>
+    </div>
+    
+    <div class="section">
+        <h2>Speaker Contribution</h2>
+        {% if speaker_chart %}
+        <div class="chart">
+            <img src="data:image/png;base64,{{ speaker_chart }}" alt="Speaker Contribution">
+        </div>
+        {% else %}
+        <p>No speaker data available</p>
+        {% endif %}
+    </div>
+    
+    <div class="section">
+        <h2>Emotion Distribution</h2>
+        {% if emotion_chart %}
+        <div class="chart">
+            <img src="data:image/png;base64,{{ emotion_chart }}" alt="Emotion Distribution">
+        </div>
+        {% else %}
+        <p>No emotion data available</p>
+        {% endif %}
+    </div>
+    
+    <div class="section">
+        <h2>Detailed Transcript</h2>
+        {% for speaker, entries in transcript_by_speaker.items() %}
+        <div class="subsection">
+            <h3 class="speaker">{{ speaker }}</h3>
+            {% for entry in entries %}
+            <p>
+                <span class="timestamp">{{ entry.timestamp }}</span> - 
+                {{ entry.text }}
+            </p>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No transcript available</p>
+        {% endfor %}
+    </div>
+    
+    <div class="section">
+        <h2>Emotion Analysis</h2>
+        {% for person, emotions in emotions_by_person.items() %}
+        <div class="subsection">
+            <h3 class="person">{{ person }}</h3>
+            {% for entry in emotions %}
+            <p>
+                <span class="timestamp">{{ entry.timestamp }}</span> - 
+                <span class="emotion {{ entry.emotion }}">{{ entry.emotion }}</span> 
+                (confidence: {{ entry.confidence|round(1) }}%)
+            </p>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>No emotion data available</p>
+        {% endfor %}
+    </div>
+</body>
+</html>
