@@ -55,7 +55,7 @@ def meeting_bot_view(request):
 
     # Correct way to format the string in Python (not using ${} like JavaScript)
     filename = f"reco{random.randint(1, 1000)}"  # or math.floor(random.random() * 1000) + 1
-    print("New filename is .....", filename)
+    print("New filename is .....", filename, data)
     filename = os.path.join(recording_dir,filename)
     logger.info(f"Starting meeting bot for meeting: {data['meeting_link']}")
 
@@ -68,7 +68,7 @@ def meeting_bot_view(request):
                     password=password,
                     meeting_link=data['meeting_link'],
                     filename=filename,
-                    duration= data['duration_minutes'],
+                    duration= data['duration'],
                     headless=False  # Start with visible browser for debugging
                 )
                 bot.run()
